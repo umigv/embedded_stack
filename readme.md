@@ -5,9 +5,12 @@
 ### Arduino Flashing
 
 `odrive/arduino/` contains a test file for an Arduino Mega to control the ODrive (`odrive/arduino/src/main.ino`). Connect the Arduino Mega to the ODrive using jumper cables as follows:
+
 * Arduino gnd -> ODrive gnd
 * Arduino pin 18 -> ODrive gpio 2
 * Arduino pin 19 -> ODrive gpio 1
+
+The software depends on the [ODrive Arduino library](https://github.com/odriverobotics/ODrive/tree/master/Arduino/ODriveArduino). Follow [these](https://github.com/odriverobotics/ODrive/blob/master/Arduino/ODriveArduino/README.md) instructions to install this library in your Arduino IDE.
 
 After flashing and opening the serial monitor at 115200 baud, it should say:
 
