@@ -26,6 +26,17 @@ Send the character 'p' to read motor positions in a 10s loop
 
 When no motor is connected only the `b` command works; it should return roughly 24.
 
+### ODrive Motor Testing
+
+To work with the motors, follow the encoder and motor setup [here](https://docs.odriverobotics.com/v/latest/getting-started.html#motor-configuration).
+Afterwards, calibrate the motors with `odrv0.axis0.requested_state = AXIS_STATE_FULL_CALIBRATION_SEQUENCE`. Within two seconds, a beep will occur, followed by the calibration. The calibration consists of three different phases. If at any point the calibration fails, the motor will stop working, and the ODrive will update all the error flags.
+
+After a successful calibration sequence, enter `odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL`. Then type `odrv0.axis0.controller.config.control_mode` to check what mode the ODrive is in. The integer value corresponds to one of four modes, which can be verified [here](https://betadocs.odriverobotics.com/api/odrive.controller.controlmode). For now, set it to `CONTROL_MODE_VELOCITY_CONTROL` by typing `odrv0.axis0.controller.config.control_mode = CONTROL_MODE_VELOCITY_CONTROL`.
+
+To set an input velocity, type `odrv0.axis0.controller.input_vel = x` where x is the value in revolutions per second. The current tested range is (-MAX, 2) ∪ [0, 0] ∪ (2, MAX) where MAX is the maximum revolutions per second allowed. This value can be changed by the user. If at any point the motor stops spinning, it means that the ODrive has errors and that the error flags have been set.
+
+If there are errors at any point, type `dump_errors(odrv0)` to view all errors, and type `odrv0.clear_errors()` to reset all the error flags. Then start over with the calibration sequence.
+
 ### ODrive Configuration
 
 The ODrive's configuration can be saved to a JSON file using the command `odrivetool backup-config my_config.json` and saved to an ODrive from the configuration file using `odrivetool restore-config my_config.json`. The current configuration is stored under `odrive/config/backup.json`.
