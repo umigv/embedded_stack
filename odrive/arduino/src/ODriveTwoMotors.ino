@@ -42,7 +42,7 @@ HardwareSerial& odrive_serial2 = Serial2;
 
 
 // ODrive object
-ODriveArduino odrive(odrive_serial);
+//ODriveArduino odrive(odrive_serial);
 ODriveArduino odrive2(odrive_serial2);
 
 void setupODrive(ODriveArduino& odrive);
@@ -51,27 +51,28 @@ void closedLoopControl(ODriveArduino& odrive);
 
 void setup() {
   // ODrive uses 115200 baud
-  odrive_serial.begin(115200);
+  //odrive_serial.begin(115200);
   odrive_serial2.begin(115200);
 
   // Serial to PC
   Serial.begin(115200);
-  while (!Serial) ; // wait for Arduino Serial Monitor to open
+  //while (!Serial) ; // wait for Arduino Serial Monitor to open
   while (!Serial2); // wait for Arduino Serial Monitor to open
 
   Serial.println("ODriveArduino");
   Serial.println("Setting parameters...");
 
-  setupODriveParams(odrive);
+  //setupODriveParams(odrive);
   setupODriveParams(odrive2);
   int requested_state = AXIS_STATE_FULL_CALIBRATION_SEQUENCE;
-  odrive.run_state(0, requested_state, false);
+  //odrive.run_state(0, requested_state, false);
   odrive2.run_state(0, requested_state, false);
-  //delay(19000);
-  odrive.run_state(1, requested_state, false);
+  delay(19000);
+  //odrive.run_state(1, requested_state, false);
   odrive2.run_state(1, requested_state, false);
   delay(19000);
-  closedLoopControl(odrive);
+  Serial.println("Finished calibration!");
+  //closedLoopControl(odrive);
   closedLoopControl(odrive2);
   
 
@@ -85,6 +86,7 @@ void setup() {
 void loop() {
   static uint32_t counter = 1;
   uint8_t stop = digitalRead(6);
+  static uint8_t tuning = 0;
   if (counter == 500) {
     Serial.print("From pin 6: ");
     Serial.println(stop);
@@ -100,39 +102,88 @@ void loop() {
 //  }
 
 String readString = "";
+char c = '\0';
 while (Serial.available()) {
-    char c = Serial.read();  //gets one byte from serial buffer
+    c = Serial.read();  //gets one byte from serial buffer
     readString += c; //makes the String readString
     delay(2);  //slow looping to allow buffer to fill with next character
   }
 
   // Don't update until user types a new value or if button is pressed
-  if (readString.length() > 0 || stop) {
+  if (readString == "q") {
+    return;
+  }
+  else if (stop) {
+    if (counter == 500) Serial.println("Input velocity: 0" + readString);  //so you can see the captured String
+    //odrive.SetVelocity(0, 0);
+    //odrive.SetVelocity(1, 0);
+    odrive2.SetVelocity(0, 0);
+    odrive2.SetVelocity(1, 0);
+  }
+//    else if (readString  == "t") { // tuning
+//    tuning = !tuning;
+//    //serial << "w axis" << motor << ".controller.config.vel_gain = " << val << "\n";
+//    //serial << "w axis" << motor << ".controller.config.vel__integrator_gain = " << val << "\n";
+//  }
+//  else if (tuning && c == 'v') {
+//    // TODO fix it so it reads floats
+//    odrive_serial2 << "r axis" << 0 << ".controller.config.vel_gain\n";
+//    Serial.print("Current vel_gain for axis0: ");
+//    Serial.println(odrive2.readFloat());
+//    odrive_serial2 << "r axis" << 1 << ".controller.config.vel_gain\n";
+//    Serial.print("Current vel_gain for axis1: ");
+//    Serial.println(odrive2.readFloat());
+//    String readVal = "";
+//    while (!Serial.available()) {
+//      readVal = "";
+//      while(Serial.available()) {
+//        char ch = Serial.read();  //gets one byte from serial buffer
+//        readVal += ch; //makes the String readString
+//        delay(2);  //slow looping to allow buffer to fill with next character
+//      }
+//      if (readVal.length() > 0) break;
+//    }
+//    odrive_serial2 << "w axis" << 0 << ".controller.config.vel_gain = " << readVal << "\n";
+//    odrive_serial2 << "w axis" << 1 << ".controller.config.vel_gain = " << readVal << "\n";
+//    Serial.println("Vel gains set to " + readVal + ".\n");
+//  }
+  else if (readString.length() > 0 || stop) {
     if (stop && counter == 500) Serial.println("Input velocity: 0" + readString);  //so you can see the captured String 
     else if (!stop) Serial.println("Input velocity: " + readString);  //so you can see the captured String 
-    int n = digitalRead(6) ? 0 : readString.toInt();  //convert readString into a number
+    float n = digitalRead(6) ? 0 : readString.toFloat();  //convert readString into a number
     //Serial.println(n); //so you can see the integer
 
-    odrive.SetVelocity(0, n);
-    odrive.SetVelocity(1, n);
+    //odrive.SetVelocity(0, n);
+    //odrive.SetVelocity(1, n);
     odrive2.SetVelocity(0, n);
     odrive2.SetVelocity(1, n);
     readString = ""; // reset string
   }
+
+
+  else if (readString.length() > 0) {
+    float n = readString.toFloat();
+    //odrive.SetVelocity(0, n);
+    //odrive.SetVelocity(1, n);
+    odrive2.SetVelocity(0, n);
+    odrive2.SetVelocity(1, n);
+  }
   if (counter == 500) {
-    Serial.print("ODrive 1 Position: ");
-    Serial.print(odrive.GetPosition(0));
-    Serial.print("\t");
-    Serial.println(odrive.GetPosition(1));
+    Serial.print("Tuning: ");
+    Serial.println(tuning);
+    //Serial.print("ODrive 1 Position: ");
+    //Serial.print(odrive.GetPosition(0));
+    //Serial.print("\t");
+    //Serial.println(odrive.GetPosition(1));
     Serial.print("ODrive 2 Position: ");
     Serial.print(odrive2.GetPosition(0));
     Serial.print("\t");
     Serial.println(odrive2.GetPosition(1));
     Serial.println();
-    Serial.print("ODrive 1 Velocity: ");
-    Serial.print(odrive.GetVelocity(0));
-    Serial.print("\t");
-    Serial.println(odrive.GetVelocity(1));
+    //Serial.print("ODrive 1 Velocity: ");
+    //Serial.print(odrive.GetVelocity(0));
+    //Serial.print("\t");
+    //Serial.println(odrive.GetVelocity(1));
     Serial.print("ODrive 2 Velocity: ");
     Serial.print(odrive2.GetVelocity(0));
     Serial.print("\t");
@@ -151,6 +202,8 @@ while (Serial.available()) {
     counter = 0;
   }
   delay(1);
+  readString = ""; // reset
+  c = '\0'; // reset
   ++counter;
 }
 
@@ -172,3 +225,12 @@ void closedLoopControl(ODriveArduino& odrive) {
   odrive.SetVelocity(0, 0);
   odrive.SetVelocity(1, 0);
 }
+//
+//void setVelGain(int motor, HardwareSerial& serial, float val) {
+//  serial << "w axis" << motor << ".controller.config.vel_gain = " << val << "\n";
+//}
+//
+//float readVelGain(int motor, HardwareSerial& serial) {
+//  serial << "w axis" << motor << ".controller.config.vel_gain";
+//  
+//}
