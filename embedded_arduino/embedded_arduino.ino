@@ -59,7 +59,7 @@ float right_vel = 0;
 unsigned long lastData = 0;
 const float WHEEL_DIAMTER = 0.3;
 // this is the conversion from m/s to revolutions per second including gear ratio
-float VEL_TO_RPS = 1 / (2 * WHEEL_DIAMETER * PI * PI) * 98.0/3.0;
+float VEL_TO_RPS = 1.0 / (WHEEL_DIAMETER * PI) * 98.0/3.0;
 
 
 ros::NodeHandle nh;
