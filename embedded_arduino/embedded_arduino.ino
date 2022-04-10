@@ -1,5 +1,3 @@
-#include <ArduinoHardware.h>
-#include <ArduinoTcpHardware.h>
 #include <ros.h>
 
 #include <HardwareSerial.h>
@@ -39,7 +37,7 @@ HardwareSerial& odrive_serial2 = Serial2;
 
 
 // ODrive object
-//ODriveArduino odrive(odrive_serial);
+ODriveArduino odrive(odrive_serial);
 ODriveArduino odrive2(odrive_serial2);
 
 void setupODrive(ODriveArduino& odrive);
@@ -57,7 +55,7 @@ const bool REVERSE1 = true;
 float left_vel = 0;
 float right_vel = 0;
 unsigned long lastData = 0;
-const float WHEEL_DIAMTER = 0.3;
+const float WHEEL_DIAMETER = 0.3;
 // this is the conversion from m/s to revolutions per second including gear ratio
 float VEL_TO_RPS = 1.0 / (WHEEL_DIAMETER * PI) * 98.0/3.0;
 
@@ -73,8 +71,10 @@ void velCallback(const geometry_msgs::Twist& twist_msg) {
   right_vel = REVERSE1 ? -right_vel : right_vel;
 
   //TODO: CHECK WHICH ODRIVE WHICH IS
-  odrive.SetVelocity(0, int(right_vel * VEL_TO_RPS);
+  odrive.SetVelocity(0, int(left_vel * VEL_TO_RPS);
   odrive.SetVelocity(1, int(left_vel * VEL_TO_RPS);
+  odrive2.SetVelocity(0, int(right_vel * VEL_TO_RPS);
+  odrive2.SetVelocity(1, int(right_vel * VEL_TO_RPS);
 }
 ros::Subscriber<geometry_msgs::Twist> sub("/teleop/cmd_vel", velCallback);
 
@@ -103,17 +103,23 @@ void setup() {
 
   int requested_state = AXIS_STATE_FULL_CALIBRATION_SEQUENCE;
   odrive.run_state(0, requested_state, false);
+  odrive2.run_state(0, requested_state, false);
   delay(19000);
   odrive.run_state(1, requested_state, false);
+  odrive2.run_state(1, requested_state, false);
   delay(19000);
 
   requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL;
 
   odrive.run_state(0, requested_state, false);
   odrive.run_state(1, requested_state, false);
+  odrive2.run_state(0, requested_state, false);
+  odrive2.run_state(1, requested_state, false);
   
   odrive.SetVelocity(0, 0);
   odrive.SetVelocity(1, 0);
+  odrive2.SetVelocity(0, 0);
+  odrive2.SetVelocity(1, 0);
 
   nh.initNode();
   nh.subscribe(sub);
@@ -127,6 +133,8 @@ void loop() {
   if(millis() - lastData >= CONTROL_TIMEOUT) {
     odrive.SetVelocity(0, 0);
     odrive.SetVelocity(1, 0);
+    odrive2.SetVelocity(0, 0);
+    odrive2.SetVelocity(1, 0);
   }
 
   //TODO publish encoder data
@@ -144,14 +152,7 @@ void setupODriveParams(ODriveArduino& odrive) {
   for (int axis = 0; axis < 2; ++axis) {
     odrive_serial << "w axis" << axis << ".controller.config.vel_limit " << 30.0f << '\n';
     odrive_serial << "w axis" << axis << ".motor.config.current_lim " << 60.0f << '\n';
+    odrive_serial2 << "w axis" << axis << ".controller.config.vel_limit " << 30.0f << '\n';
+    odrive_serial2 << "w axis" << axis << ".motor.config.current_lim " << 60.0f << '\n';
   }
-}
-
-void closedLoopControl(ODriveArduino& odrive) {
-  int requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL;
-  odrive.run_state(0, requested_state, false);
-  odrive.run_state(1, requested_state, false);
-  
-  odrive.SetVelocity(0, 0);
-  odrive.SetVelocity(1, 0);
 }
