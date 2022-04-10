@@ -49,7 +49,7 @@ void closedLoopControl(ODriveArduino& odrive);
 template<class T> inline Print& operator <<(Print &obj,     T arg) { obj.print(arg);    return obj; }
 template<>        inline Print& operator <<(Print &obj, float arg) { obj.print(arg, 4); return obj; }
 
-float WHEEL_BASE = 0.62;
+const float WHEEL_BASE = 0.62;
 const long CONTROL_TIMEOUT = 1000;
 const bool REVERSE0 = false;
 const bool REVERSE1 = true;
@@ -57,6 +57,9 @@ const bool REVERSE1 = true;
 float left_vel = 0;
 float right_vel = 0;
 unsigned long lastData = 0;
+const float WHEEL_DIAMTER = 0.3;
+// this is the conversion from m/s to revolutions per second including gear ratio
+float VEL_TO_RPS = 1 / (2 * WHEEL_DIAMETER * PI * PI) * 98.0/3.0;
 
 
 ros::NodeHandle nh;
@@ -70,8 +73,8 @@ void velCallback(const geometry_msgs::Twist& twist_msg) {
   right_vel = REVERSE1 ? -right_vel : right_vel;
 
   //TODO: CHECK WHICH ODRIVE WHICH IS
-  odrive.SetVelocity(0, int(right_vel / (PI * 0.3)) );
-  odrive.SetVelocity(1, int(left_vel / (PI * 0.3)) );
+  odrive.SetVelocity(0, int(right_vel * VEL_TO_RPS);
+  odrive.SetVelocity(1, int(left_vel * VEL_TO_RPS);
 }
 ros::Subscriber<geometry_msgs::Twist> sub("/teleop/cmd_vel", velCallback);
 
@@ -85,7 +88,7 @@ void setup() {
 
   // Serial to PC
   Serial.begin(115200);
-  while (!Serial) ; // wait for Arduino Serial Monitor to open
+  while (!Serial); // wait for Arduino Serial Monitor to open
 
   Serial.println("ODriveArduino");
   Serial.println("Setting parameters...");
