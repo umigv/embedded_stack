@@ -1,3 +1,5 @@
+// THIS IS WORKING< BUT DOES NOT HAVE ROS INTEGRATION
+
 // file pulled from https://github.com/odriverobotics/ODrive/tree/master/Arduino/ODriveArduino
 // this file is flashed to the Arduino Mega to control the ODrive via serial/uart
 // after flashing set the PC's baud rate to 115200
