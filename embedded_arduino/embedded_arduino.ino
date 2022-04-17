@@ -1,3 +1,5 @@
+//#include <ArduinoHardware.h>
+//#include <ArduinoTcpHardware.h>
 #include <ros.h>
 
 #include <HardwareSerial.h>
@@ -71,10 +73,10 @@ void velCallback(const geometry_msgs::Twist& twist_msg) {
   right_vel = REVERSE1 ? -right_vel : right_vel;
 
   //TODO: CHECK WHICH ODRIVE WHICH IS
-  odrive.SetVelocity(0, int(left_vel * VEL_TO_RPS);
-  odrive.SetVelocity(1, int(left_vel * VEL_TO_RPS);
-  odrive2.SetVelocity(0, int(right_vel * VEL_TO_RPS);
-  odrive2.SetVelocity(1, int(right_vel * VEL_TO_RPS);
+  odrive.SetVelocity(0, int(left_vel * VEL_TO_RPS));
+  odrive.SetVelocity(1, int(left_vel * VEL_TO_RPS));
+  odrive2.SetVelocity(0, int(right_vel * VEL_TO_RPS));
+  odrive2.SetVelocity(1, int(right_vel * VEL_TO_RPS));
 }
 ros::Subscriber<geometry_msgs::Twist> sub("/teleop/cmd_vel", velCallback);
 
