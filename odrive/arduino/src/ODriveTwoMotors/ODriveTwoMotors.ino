@@ -63,7 +63,8 @@ const float WHEEL_DIAMETER = 0.3;
 const long CONTROL_TIMEOUT = 1000;
 const bool REVERSE0 = true;
 const bool REVERSE1 = false;
-float VEL_TO_RPS = 1.0 / (WHEEL_DIAMETER * PI) * 98.0/3.0;
+float VEL_TO_RPS = 1.0 / (WHEEL_DIAMETER * PI) * 98.0/3.0; 
+const float  VEL_LIMIT = 2.235 * VEL_TO_RPS; % 5 mph (2.2 m/s) limit
 
 ros::NodeHandle nh;
 void velCallback(const geometry_msgs::Twist& twist_msg) {
@@ -136,7 +137,7 @@ void setupODriveParams(ODriveArduino& odrive) {
   // You can of course set them different if you want.
   // See the documentation or play around in odrivetool to see the available parameters
   for (int axis = 0; axis < 2; ++axis) {
-    odrive_serial << "w axis" << axis << ".controller.config.vel_limit " << 30.0f << '\n';
+    odrive_serial << "w axis" << axis << ".controller.config.vel_limit " << VEL_LIMIT << '\n';
     odrive_serial << "w axis" << axis << ".motor.config.current_lim " << 60.0f << '\n';
     odrive_serial << "w axis" << axis << ".encoder.config.cpr " << 42.0f << '\n';
     odrive_serial << "w axis" << axis << ".controller.config.pos_gain " << 45.0f << '\n';
