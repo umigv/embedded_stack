@@ -40,3 +40,7 @@ If there are errors at any point, type `dump_errors(odrv0)` to view all errors, 
 ### ODrive Configuration
 
 The ODrive's configuration can be saved to a JSON file using the command `odrivetool backup-config my_config.json` and saved to an ODrive from the configuration file using `odrivetool restore-config my_config.json`. The current configuration is stored under `odrive/config/backup.json`.
+
+## Working Code
+
+Currently, 'ODriveTwoMotors' is the working code to run in the Arduino Mega. It is able to control the odrives and communicate with ROS. 
