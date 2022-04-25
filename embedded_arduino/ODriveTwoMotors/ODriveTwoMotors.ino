@@ -64,7 +64,7 @@ const long CONTROL_TIMEOUT = 1000;
 const bool REVERSE0 = true;
 const bool REVERSE1 = false;
 float VEL_TO_RPS = 1.0 / (WHEEL_DIAMETER * PI) * 98.0/3.0; 
-const float  VEL_LIMIT = 2.235 * VEL_TO_RPS; % 5 mph (2.2 m/s) limit
+const float  VEL_LIMIT = 2.235 * VEL_TO_RPS; // 5 mph (2.2 m/s) limit
 
 ros::NodeHandle nh;
 void velCallback(const geometry_msgs::Twist& twist_msg) {
