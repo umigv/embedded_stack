@@ -61,8 +61,8 @@ unsigned long lastData = 0;
 const float WHEEL_BASE = 0.62;
 const float WHEEL_DIAMETER = 0.3;
 const long CONTROL_TIMEOUT = 1000;
-const bool REVERSE0 = false;
-const bool REVERSE1 = true;
+const bool REVERSE0 = true;
+const bool REVERSE1 = false;
 float VEL_TO_RPS = 1.0 / (WHEEL_DIAMETER * PI) * 98.0/3.0;
 
 ros::NodeHandle nh;
