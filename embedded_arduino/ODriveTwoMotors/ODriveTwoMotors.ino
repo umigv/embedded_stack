@@ -57,12 +57,13 @@ void closedLoopControl(ODriveArduino& odrive);
 
 float left_vel = 0;
 float right_vel = 0;
+uint8_t wireless_stop = 0;
 unsigned long lastData = 0;
 const float WHEEL_BASE = 0.62;
 const float WHEEL_DIAMETER = 0.3;
 const long CONTROL_TIMEOUT = 1000;
-const bool REVERSE0 = true;
-const bool REVERSE1 = false;
+const int8_t LEFT_POLARITY = -1;
+const int8_t RIGHT_POLARITY = 1;
 float VEL_TO_RPS = 1.0 / (WHEEL_DIAMETER * PI) * 98.0/3.0; 
 const float  VEL_LIMIT = 2.235 * VEL_TO_RPS; // 5 mph (2.2 m/s) limit
 
@@ -70,21 +71,31 @@ ros::NodeHandle nh;
 void velCallback(const geometry_msgs::Twist& twist_msg) {
   lastData = millis();
 
-  left_vel = twist_msg.linear.x - WHEEL_BASE * twist_msg.angular.z / 2.0;
-  right_vel = twist_msg.linear.x + WHEEL_BASE * twist_msg.angular.z / 2.0;
-
-  left_vel = REVERSE0 ? -left_vel : left_vel;
-  right_vel = REVERSE1 ? -right_vel : right_vel;
+  left_vel = LEFT_POLARITY * (twist_msg.linear.x - WHEEL_BASE * twist_msg.angular.z / 2.0);
+  right_vel = RIGHT_POLARITY * (twist_msg.linear.x + WHEEL_BASE * twist_msg.angular.z / 2.0);
 
   //TODO: CHECK WHICH ODRIVE WHICH IS
-  odrive.SetVelocity(0, int(left_vel * VEL_TO_RPS));
-  odrive.SetVelocity(1, int(left_vel * VEL_TO_RPS));
-  odrive2.SetVelocity(0, int(right_vel * VEL_TO_RPS));
-  odrive2.SetVelocity(1, int(right_vel * VEL_TO_RPS));
+  if (!wireless_stop)
+  {
+    odrive.SetVelocity(0, int(left_vel * VEL_TO_RPS));
+    odrive.SetVelocity(1, int(left_vel * VEL_TO_RPS));
+    odrive2.SetVelocity(0, int(right_vel * VEL_TO_RPS));
+    odrive2.SetVelocity(1, int(right_vel * VEL_TO_RPS));
+  }
 }
 ros::Subscriber<geometry_msgs::Twist> sub("/teleop/cmd_vel", velCallback);
+geometry_msgs::Twist encoder_vel_msg;
+ros::Publisher encoder_vel_pub("/encoder/state", &encoder_vel_msg);
+unsigned int pub_period = 100; //ms between publish
+unsigned long prev_time;
 
 void setup() {
+
+  nh.initNode();
+  nh.subscribe(sub);
+  nh.advertise(encoder_vel_pub);
+  prev_time = 0;
+  
   // ODrive uses 115200 baud
   odrive_serial.begin(115200);
   odrive_serial2.begin(115200);
@@ -105,15 +116,28 @@ void setup() {
   //Serial.println("Finished calibration!");
   closedLoopControl(odrive);
   closedLoopControl(odrive2);
-  
-  nh.initNode();
-  nh.subscribe(sub);
-  //nh.getHardware()->setBaud(115200);
 }
 
 void loop() {
-  nh.spinOnce();
 
+  if (prev_time + pub_period <= millis())
+  {
+    float left_vel_ = LEFT_POLARITY * odrive.GetVelocity(0) / VEL_TO_RPS;
+    float right_vel_ = RIGHT_POLARITY * odrive2.GetVelocity(0) / VEL_TO_RPS;
+
+    float linear = (left_vel_ + right_vel_) / 2.0;
+    float angular = (right_vel_ - left_vel_) / 2.0;
+
+    encoder_vel_msg.linear.x = linear;
+    encoder_vel_msg.angular.z = angular;
+
+    encoder_vel_pub.publish(&encoder_vel_msg);
+
+    prev_time = millis();
+    
+  }
+
+  
   /*
   if(millis() - lastData >= CONTROL_TIMEOUT) {
     odrive.SetVelocity(0, 0);
@@ -123,13 +147,16 @@ void loop() {
   }
   */
   
-  uint8_t stop = digitalRead(32);
-  if (stop) {
+  wireless_stop = digitalRead(32);
+  if (wireless_stop) {
     odrive.SetVelocity(0, 0);
     odrive.SetVelocity(1, 0);
     odrive2.SetVelocity(0, 0);
     odrive2.SetVelocity(1, 0);
   }
+
+  nh.spinOnce();
+  delay(1);
 }
 
 void setupODriveParams(ODriveArduino& odrive) {
