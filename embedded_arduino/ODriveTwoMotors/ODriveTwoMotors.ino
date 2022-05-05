@@ -14,6 +14,9 @@
 #include <ros.h>
 #include <geometry_msgs/Twist.h>
 #include <sensor_msgs/JointState.h>
+#include <std_msgs/String.h>
+#include <Adafruit_NeoPixel.h>
+
 // Printing with stream operator helper functions
 template<class T> inline Print& operator <<(Print &obj,     T arg) { obj.print(arg);    return obj; }
 template<>        inline Print& operator <<(Print &obj, float arg) { obj.print(arg, 4); return obj; }
@@ -56,6 +59,7 @@ void setupODrive(ODriveArduino& odrive);
 void setupODriveParams(ODriveArduino& odrive);
 void closedLoopControl(ODriveArduino& odrive);
 
+bool is_autonomous = false;
 float left_vel = 0;
 float right_vel = 0;
 uint8_t wireless_stop = 0;
@@ -68,7 +72,9 @@ const int8_t RIGHT_POLARITY = 1;
 float VEL_TO_RPS = 1.0 / (WHEEL_DIAMETER * PI) * 98.0/3.0; 
 const float  VEL_LIMIT = 2.235 * VEL_TO_RPS; // 5 mph (2.2 m/s) limit
 
+//------ ROS STUFF --------------
 ros::NodeHandle nh;
+//subscriber and callback to recieve velocity messages and move the motors accordingly
 void velCallback(const geometry_msgs::Twist& twist_msg) {
   lastData = millis();
 
@@ -84,7 +90,22 @@ void velCallback(const geometry_msgs::Twist& twist_msg) {
     odrive2.SetVelocity(1, int(right_vel * VEL_TO_RPS));
   }
 }
-ros::Subscriber<geometry_msgs::Twist> sub("/teleop/cmd_vel", velCallback);
+ros::Subscriber<geometry_msgs::Twist> cmd_vel_sub("/cmd_vel", velCallback);
+
+//subscriber and callback to recieve velocity command source info for status light
+void cmdVelSourceCallback(const std_msgs::String& msg) {
+
+  if (msg.data == "autonomous") {
+    is_autonomous = true;
+  }
+  else {
+    is_autonomous = false;
+  }
+  
+}
+ros::Subscriber<std_msgs::String> cmd_vel_source_sub("/cmd_vel_source", cmdVelSourceCallback);
+
+//publisher to publish current motor velocity and position (for odometry in the sensor stack)
 sensor_msgs::JointState encoder_vel_msg;
 ros::Publisher encoder_vel_pub("/encoders/state", &encoder_vel_msg);
 char left_joint_name[12] = "left_wheel";
@@ -96,10 +117,24 @@ float joint_pos[2] = {0.0, 0.0};
 unsigned int pub_period = 50; //ms between publish
 unsigned long prev_time;
 
+//----- ADAFRUIT LIGHT ------
+#define PIXEL_PIN 9
+#define PIXEL_COUNT 12
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(PIXEL_COUNT, PIXEL_PIN, NEO_GRB + NEO_KHZ800);
+const long blink_interval = 500;
+unsigned long prev_blink_time = 0;
+bool light_on = false;
+
 void setup() {
 
+  //set up light
+  strip.begin();
+  strip.show();
+  
+  //set up ROS stuff
   nh.initNode();
-  nh.subscribe(sub);
+  nh.subscribe(cmd_vel_sub);
+  nh.subscribe(cmd_vel_source_sub);
   nh.advertise(encoder_vel_pub);
   prev_time = 0;
   joint_names[0] = left_joint_name;
@@ -149,15 +184,31 @@ void loop() {
     
   }
 
-  
-  /*
-  if(millis() - lastData >= CONTROL_TIMEOUT) {
-    odrive.SetVelocity(0, 0);
-    odrive.SetVelocity(1, 0);
-    odrive2.SetVelocity(0, 0);
-    odrive2.SetVelocity(1, 0);
+  //blink green if autonomous, solid blue if teleop
+  if (is_autonomous)
+  {
+    if (millis() - prev_blink_time >= blink_interval) 
+    {
+      prev_blink_time = millis();
+
+      if (light_on)
+      {
+        strip.fill(strip.Color(0, 255, 0), 0, strip.numPixels() - 1)
+        strip.show()
+      }
+      else
+      {
+        strip.clear();
+        strip.show();
+      }
+      light_on = !light_on;
+    }
   }
-  */
+  else
+  {
+    strip.fill(strip.Color(0, 0, 255), 0, strip.numPixels() - 1)
+    strip.show()
+  }
   
   wireless_stop = digitalRead(32);
   if (wireless_stop) {
@@ -192,4 +243,11 @@ void closedLoopControl(ODriveArduino& odrive) {
   
   odrive.SetVelocity(0, 0);
   odrive.SetVelocity(1, 0);
+}
+
+void colorWipe(uint32_t c) {
+  for(uint16_t i=0; i<strip.numPixels(); i++) {
+    strip.setPixelColor(i, c);
+    strip.show();
+  }
 }
