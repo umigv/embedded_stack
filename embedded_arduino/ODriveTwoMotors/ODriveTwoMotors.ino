@@ -13,6 +13,7 @@
 #include <ODriveArduino.h>
 #include <ros.h>
 #include <geometry_msgs/Twist.h>
+#include <sensor_msgs/JointState.h>
 // Printing with stream operator helper functions
 template<class T> inline Print& operator <<(Print &obj,     T arg) { obj.print(arg);    return obj; }
 template<>        inline Print& operator <<(Print &obj, float arg) { obj.print(arg, 4); return obj; }
@@ -84,9 +85,15 @@ void velCallback(const geometry_msgs::Twist& twist_msg) {
   }
 }
 ros::Subscriber<geometry_msgs::Twist> sub("/teleop/cmd_vel", velCallback);
-geometry_msgs::Twist encoder_vel_msg;
-ros::Publisher encoder_vel_pub("/encoder/state", &encoder_vel_msg);
-unsigned int pub_period = 100; //ms between publish
+sensor_msgs::JointState encoder_vel_msg;
+ros::Publisher encoder_vel_pub("/encoders/state", &encoder_vel_msg);
+char left_joint_name[12] = "left_wheel";
+char right_joint_name[12] = "right_wheel";
+char* joint_names[2];
+float joint_vels[2] = {0.0, 0.0};
+float joint_pos[2] = {0.0, 0.0};
+
+unsigned int pub_period = 50; //ms between publish
 unsigned long prev_time;
 
 void setup() {
@@ -95,6 +102,8 @@ void setup() {
   nh.subscribe(sub);
   nh.advertise(encoder_vel_pub);
   prev_time = 0;
+  joint_names[0] = left_joint_name;
+  joint_names[1] = right_joint_name;
   
   // ODrive uses 115200 baud
   odrive_serial.begin(115200);
@@ -122,14 +131,17 @@ void loop() {
 
   if (prev_time + pub_period <= millis())
   {
-    float left_vel_ = LEFT_POLARITY * odrive.GetVelocity(0) / VEL_TO_RPS;
-    float right_vel_ = RIGHT_POLARITY * odrive2.GetVelocity(0) / VEL_TO_RPS;
+    joint_vels[0] = LEFT_POLARITY * odrive.GetVelocity(0) / VEL_TO_RPS;
+    joint_vels[1] = RIGHT_POLARITY * odrive2.GetVelocity(0) / VEL_TO_RPS;
+    joint_pos[0] = LEFT_POLARITY * odrive.GetPosition(0) / VEL_TO_RPS;
+    joint_pos[1] = RIGHT_POLARITY * odrive2.GetPosition(0) / VEL_TO_RPS;
 
-    float linear = (left_vel_ + right_vel_) / 2.0;
-    float angular = (right_vel_ - left_vel_) / 2.0;
-
-    encoder_vel_msg.linear.x = linear;
-    encoder_vel_msg.angular.z = angular;
+    encoder_vel_msg.name = joint_names;
+    encoder_vel_msg.name_length = 2;
+    encoder_vel_msg.velocity = joint_vels;
+    encoder_vel_msg.velocity_length = 2;
+    encoder_vel_msg.position = joint_pos;
+    encoder_vel_msg.position_length = 2;
 
     encoder_vel_pub.publish(&encoder_vel_msg);
 
