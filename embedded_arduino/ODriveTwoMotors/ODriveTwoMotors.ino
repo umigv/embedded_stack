@@ -82,8 +82,7 @@ void velCallback(const geometry_msgs::Twist& twist_msg) {
   right_vel = RIGHT_POLARITY * (twist_msg.linear.x + WHEEL_BASE * twist_msg.angular.z / 2.0);
 
   //TODO: CHECK WHICH ODRIVE WHICH IS
-  if (!wireless_stop)
-  {
+  if (!wireless_stop){
     odrive.SetVelocity(0, int(left_vel * VEL_TO_RPS));
     odrive.SetVelocity(1, int(left_vel * VEL_TO_RPS));
     odrive2.SetVelocity(0, int(right_vel * VEL_TO_RPS));
@@ -164,8 +163,7 @@ void setup() {
 
 void loop() {
 
-  if (prev_time + pub_period <= millis())
-  {
+  if (prev_time + pub_period <= millis()){
     joint_vels[0] = LEFT_POLARITY * odrive.GetVelocity(0) / VEL_TO_RPS;
     joint_vels[1] = RIGHT_POLARITY * odrive2.GetVelocity(0) / VEL_TO_RPS;
     joint_pos[0] = LEFT_POLARITY * odrive.GetPosition(0) / VEL_TO_RPS;
@@ -185,29 +183,23 @@ void loop() {
   }
 
   //blink green if autonomous, solid blue if teleop
-  if (is_autonomous)
-  {
-    if (millis() - prev_blink_time >= blink_interval) 
-    {
+  if (is_autonomous){
+    if (millis() - prev_blink_time >= blink_interval) {
       prev_blink_time = millis();
 
-      if (light_on)
-      {
-        strip.fill(strip.Color(0, 255, 0), 0, strip.numPixels() - 1)
-        strip.show()
+      if (light_on){
+        strip.fill(strip.Color(0, 255, 0), 0, strip.numPixels() - 1);
       }
-      else
-      {
+      else{
         strip.clear();
-        strip.show();
       }
+      strip.show();
       light_on = !light_on;
     }
   }
-  else
-  {
-    strip.fill(strip.Color(0, 0, 255), 0, strip.numPixels() - 1)
-    strip.show()
+  else{
+    strip.fill(strip.Color(0, 0, 255), 0, strip.numPixels() - 1);
+    strip.show();
   }
   
   wireless_stop = digitalRead(32);
