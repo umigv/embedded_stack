@@ -44,3 +44,9 @@ The ODrive's configuration can be saved to a JSON file using the command `odrive
 ## Working Code
 
 Currently, 'ODriveTwoMotors' is the working code to run in the Arduino Mega. It is able to control the odrives and communicate with ROS. 
+
+## Pins Used
+
+* E-Stop -> Arduino Digital Pin 32
+* ODrive 1 -> Serial 1
+* ODrive 2 -> Serial 2
