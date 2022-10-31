@@ -2,6 +2,18 @@
 
 ## ODrive Prototyping
 
+### Connecting to ODrive
+
+* First make sure to install a version of Python, either in the terminal or through the Anaconda Navigator (recommended).
+* Then type `pip install --upgrade odrive` in the Python terminal
+* Connect your device to the ODrive and type `odrivetool` in the terminal.
+
+You should now see that your device has successfully connected to an ODrive. Remember, the ODrives require at least 12V and must be powered separately through a battery.
+
+#### Troubleshooting
+
+If you're on Windows, you may run into an issue where the USB device doesn't open. Open the [Zadig Utility](https://zadig.akeo.ie/) and download the latest version. Make sure to hit 'X' on the advertisement. Then run the `.exe` file and click "Allow." Connect to your ODrive if you have not already, and ensure that you see a `WinUSB` in one box and `ODrive Native Interface` in another box (these are not exact messages). Hit "Install." After a few minutes, the driver will be installed, and typing `odrivetool` in the Python terminal will allow you to successfully interface with the ODrives.
+
 ### Arduino Flashing
 
 `odrive/arduino/` contains a test file for an Arduino Mega to control the ODrive (`odrive/arduino/src/main.ino`). Connect the Arduino Mega to the ODrive using jumper cables as follows:
