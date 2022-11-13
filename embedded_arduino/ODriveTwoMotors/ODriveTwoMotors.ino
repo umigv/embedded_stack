@@ -60,6 +60,9 @@ void setupODrive(ODriveArduino& odrive);
 void setupODriveParams(ODriveArduino& odrive);
 void closedLoopControl(ODriveArduino& odrive);
 
+// multiplier to make sure velocity cannot change after e stop
+int eStopMultiplier = 1;
+
 bool is_autonomous = false;
 bool mode_change = true;
 float left_vel = 0;
@@ -87,10 +90,10 @@ void velCallback(const geometry_msgs::Twist& twist_msg) {
   //TODO: CHECK WHICH ODRIVE WHICH IS
   if (!wireless_stop)
   {
-    odrive.SetVelocity(0, left_vel * VEL_TO_RPS);
-    odrive.SetVelocity(1, left_vel * VEL_TO_RPS);
-    odrive2.SetVelocity(0, right_vel * VEL_TO_RPS);
-    odrive2.SetVelocity(1, right_vel * VEL_TO_RPS);
+    odrive.SetVelocity(0, left_vel * VEL_TO_RPS * eStopMultiplier);
+    odrive.SetVelocity(1, left_vel * VEL_TO_RPS * eStopMultiplier);
+    odrive2.SetVelocity(0, right_vel * VEL_TO_RPS * eStopMultiplier);
+    odrive2.SetVelocity(1, right_vel * VEL_TO_RPS * eStopMultiplier);
   }
 }
 ros::Subscriber<geometry_msgs::Twist> cmd_vel_sub("/cmd_vel", velCallback);
@@ -139,6 +142,9 @@ unsigned long current_time = 0;
 
 void setup() {
 
+  //set up interrupt
+  attachInterrupt(digitalPinToInterrupt(2),interruptEStop,CHANGE);
+
   //set up light
   strip.begin();
   strip.show();
@@ -176,10 +182,12 @@ void setup() {
   //Serial.println("Finished calibration!");
   closedLoopControl(odrive);
   closedLoopControl(odrive2);
+  Serial.begin(9600);
 }
 
 void loop() {
-
+  odrive.SetVelocity(1, 1 * VEL_TO_RPS * eStopMultiplier);
+  //Serial.println(eStopMultiplier);
   current_time = millis();
 
   if (prev_time + pub_period <= current_time)
@@ -257,6 +265,7 @@ void loop() {
   }
 
   //check wireless e stop
+  /*
   wireless_stop = digitalRead(32);
   if (wireless_stop) {
     odrive.SetVelocity(0, 0);
@@ -264,9 +273,27 @@ void loop() {
     odrive2.SetVelocity(0, 0);
     odrive2.SetVelocity(1, 0);
   }
-
+  */
   nh.spinOnce();
   delay(1);
+}
+
+//interrupt e stop funcition
+void interruptEStop(){
+  
+  odrive.SetVelocity(0, 0);
+  odrive.SetVelocity(1, 0);
+  odrive2.SetVelocity(0, 0);
+  odrive2.SetVelocity(1, 0);
+  if(eStopMultiplier==0){
+    eStopMultiplier = 1;
+  }
+  if(eStopMultiplier==1){
+    eStopMultiplier = 0;
+  }
+  wireless_stop = !wireless_stop;
+  Serial.println("interrupt");
+  Serial.println(eStopMultiplier);
 }
 
 void setupODriveParams(ODriveArduino& odrive) {
