@@ -182,7 +182,7 @@ void setup() {
   //Serial.println("Finished calibration!");
   closedLoopControl(odrive);
   closedLoopControl(odrive2);
-  Serial.begin(9600);
+  Serial.begin(115200);
 }
 
 void loop() {
@@ -277,23 +277,23 @@ void loop() {
   nh.spinOnce();
   delay(1);
 }
-
+unsigned long lastTimeStamp = millis();
 //interrupt e stop funcition
 void interruptEStop(){
-  
-  odrive.SetVelocity(0, 0);
-  odrive.SetVelocity(1, 0);
-  odrive2.SetVelocity(0, 0);
-  odrive2.SetVelocity(1, 0);
-  if(eStopMultiplier==0){
-    eStopMultiplier = 1;
+  if((millis() - lastTimeStamp) >= 1000){
+    odrive.SetVelocity(0, 0);
+    odrive.SetVelocity(1, 0);
+    odrive2.SetVelocity(0, 0);
+    odrive2.SetVelocity(1, 0);
+    if(eStopMultiplier==0){
+      eStopMultiplier = 1;
+    }
+    else if(eStopMultiplier==1){
+      eStopMultiplier = 0;
+    }
+    wireless_stop = !wireless_stop;
+    lastTimeStamp = millis();
   }
-  if(eStopMultiplier==1){
-    eStopMultiplier = 0;
-  }
-  wireless_stop = !wireless_stop;
-  Serial.println("interrupt");
-  Serial.println(eStopMultiplier);
 }
 
 void setupODriveParams(ODriveArduino& odrive) {
