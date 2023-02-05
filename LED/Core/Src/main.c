@@ -18,11 +18,10 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "stdbool.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "stdbool.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -56,8 +55,9 @@ typedef union
 
 /* Private variables ---------------------------------------------------------*/
 TIM_HandleTypeDef htim2;
+TIM_HandleTypeDef htim9;
 DMA_HandleTypeDef hdma_tim2_up_ch3;
-
+bool is_blinking = false;
 UART_HandleTypeDef huart3;
 
 PCD_HandleTypeDef hpcd_USB_OTG_FS;
@@ -73,9 +73,21 @@ static void MX_DMA_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_USB_OTG_FS_PCD_Init(void);
 static void MX_TIM2_Init(void);
+static void MX_TIM9_Init(void);
+
 /* USER CODE BEGIN PFP */
-void Blink(uint8_t r, uint8_t g, uint8_t b, int delay);
-void solidColor(uint8_t r, uint8_t g, uint8_t b);
+void blink_or_not(uint8_t r, uint8_t g, uint8_t b);
+//#ifdef GNUC
+//#define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
+//#else
+//#define PUTCHAR_PROTOTYPE int fputc(int ch, FILE f)
+//#endif
+//
+//PUTCHAR_PROTOTYPE
+//{
+//  HAL_UART_Transmit(&huart3, (uint8_t)&ch, 1, HAL_MAX_DELAY);
+//  return ch;
+//}
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -85,94 +97,74 @@ void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
   HAL_TIM_PWM_Stop_DMA(htim, TIM_CHANNEL_3);
 }
 
-void Blink(uint8_t r, uint8_t g, uint8_t b, int delay){
+
+void blink_or_not(uint8_t r, uint8_t g, uint8_t b){
 	PixelRGB_t pixel[NUM_PIXELS] = {0};
 	uint32_t dmaBuffer[DMA_BUFF_SIZE] = {0};
 	uint32_t *pBuff;
-	bool pressed = false;
+	uint16_t timer_val;
+	uint16_t timer_val2;
+	timer_val2 = __HAL_TIM_GET_COUNTER(&htim9);
+	timer_val = __HAL_TIM_GET_COUNTER(&htim9);
 
-	while (!pressed)
-	{
-	if (pixel[0].color.g != 0 || pixel[0].color.b != 0 || pixel[0].color.r != 0){
-		pixel[0].color.g = 0;
-		pixel[0].color.r = 0;
-		pixel[0].color.b = 0;
-	} else{
-		pixel[0].color.g = g;
-		pixel[0].color.r = r;
-		pixel[0].color.b = b;
-	}
-	  for (int i = 0; i < (NUM_PIXELS - 1); i++)
-	{
-	  pixel[i+1].data = pixel[i].data;
-	}
+	while(1){
+		if (is_blinking){
+			if (__HAL_TIM_GET_COUNTER(&htim9) - timer_val >= 16384){
+				if (pixel[0].color.g != 0 || pixel[0].color.b != 0 || pixel[0].color.r != 0){
+//					HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0,1); //debug light
+					pixel[0].color.g = 0;
+					pixel[0].color.r = 0;
+					pixel[0].color.b = 0;
+				} else{
+//					HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0,0); //debug light
+					pixel[0].color.g = g;
+					pixel[0].color.r = r;
+					pixel[0].color.b = b;
+				}
 
-	pBuff = dmaBuffer;
-	for (int i = 0; i < NUM_PIXELS; i++)
-	{
-	   for (int j = 23; j >= 0; j--)
-	   {
-		 if ((pixel[i].data >> j) & 0x01)
-		 {
-		   *pBuff = NEOPIXEL_ONE;
-		 }
-		 else
-		 {
-		   *pBuff = NEOPIXEL_ZERO;
-		 }
-		 pBuff++;
-	 }
-	}
-	dmaBuffer[DMA_BUFF_SIZE - 1] = 0; // last element must be 0!
+				timer_val = __HAL_TIM_GET_COUNTER(&htim9);
+			}
+		} else{
+//			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0,1); //debug light
+			pixel[0].color.g = g;
+			pixel[0].color.r = r;
+			pixel[0].color.b = b;
+		}
+		if (__HAL_TIM_GET_COUNTER(&htim9) - timer_val2 >= 256) {
+			for (int i = 0; i < (NUM_PIXELS - 1); i++)
+			{
+				pixel[i+1].data = pixel[i].data;
+			}
+			pBuff = dmaBuffer;
+			for (int i = 0; i < NUM_PIXELS; i++)
+			{
+			   for (int j = 23; j >= 0; j--)
+			   {
+				 if ((pixel[i].data >> j) & 0x01)
+				 {
+				   *pBuff = NEOPIXEL_ONE;
+				 }
+				 else
+				 {
+				   *pBuff = NEOPIXEL_ZERO;
+				 }
+				 pBuff++;
+			   }
+			}
+			dmaBuffer[DMA_BUFF_SIZE - 1] = 0; // last element must be 0!
 
-	HAL_TIM_PWM_Start_DMA(&htim2, TIM_CHANNEL_3, dmaBuffer, DMA_BUFF_SIZE);
-
-	if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13) == 1){
-		pressed = true;
+			HAL_TIM_PWM_Start_DMA(&htim2, TIM_CHANNEL_3, dmaBuffer, DMA_BUFF_SIZE);
+			timer_val2 = __HAL_TIM_GET_COUNTER(&htim9);
+		}
 	}
-	HAL_Delay(delay);
-  }
 }
 
-void solidColor(uint8_t r, uint8_t g, uint8_t b){
-	PixelRGB_t pixel[NUM_PIXELS] = {0};
-	uint32_t dmaBuffer[DMA_BUFF_SIZE] = {0};
-	uint32_t *pBuff;
-	bool pressed = false;
-
-	while(!pressed){
-		pixel[0].color.g = g;
-		pixel[0].color.r = r;
-		pixel[0].color.b = b;
-		for (int i = 0; i < (NUM_PIXELS - 1); i++)
-		{
-			pixel[i+1].data = pixel[i].data;
-		}
-		pBuff = dmaBuffer;
-		for (int i = 0; i < NUM_PIXELS; i++)
-		{
-		   for (int j = 23; j >= 0; j--)
-		   {
-			 if ((pixel[i].data >> j) & 0x01)
-			 {
-			   *pBuff = NEOPIXEL_ONE;
-			 }
-			 else
-			 {
-			   *pBuff = NEOPIXEL_ZERO;
-			 }
-			 pBuff++;
-		   }
-		}
-		dmaBuffer[DMA_BUFF_SIZE - 1] = 0; // last element must be 0!
-
-		HAL_TIM_PWM_Start_DMA(&htim2, TIM_CHANNEL_3, dmaBuffer, DMA_BUFF_SIZE);
-
-		if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13) == 1){
-			pressed = true;
-		}
-		HAL_Delay(10);
-	 }
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+    if(GPIO_Pin == GPIO_PIN_13) // INT Source is pin A9
+    {
+    	is_blinking = !is_blinking;
+    }
 }
 /* USER CODE END 0 */
 
@@ -183,7 +175,6 @@ void solidColor(uint8_t r, uint8_t g, uint8_t b){
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -192,7 +183,6 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -208,7 +198,11 @@ int main(void)
   MX_USART3_UART_Init();
   MX_USB_OTG_FS_PCD_Init();
   MX_TIM2_Init();
+  MX_TIM9_Init();
   /* USER CODE BEGIN 2 */
+  // Start timer
+  HAL_TIM_Base_Start(&htim9);
+
 
   /* USER CODE END 2 */
 
@@ -219,11 +213,23 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  Blink(255,0,0,500);
-	  HAL_Delay(1000);
-	  solidColor(0,255,0);
-	  HAL_Delay(1000);
+	blink_or_not(23,34,50);
+
   }
+//  while (1)
+//    {
+//      // If enough time has passed (1 second), toggle LED and get new timestamp
+//
+//	  if (__HAL_TIM_GET_COUNTER(&htim9) - timer_val >= 16384)
+//      {
+//        HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_0);
+//        timer_val = __HAL_TIM_GET_COUNTER(&htim9);
+//      }
+//
+//      /* USER CODE END WHILE */
+//
+//      /* USER CODE BEGIN 3 */
+//    }
   /* USER CODE END 3 */
 }
 
@@ -245,7 +251,7 @@ void SystemClock_Config(void)
   * in the RCC_OscInitTypeDef structure.
   */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
-  RCC_OscInitStruct.HSEState = RCC_HSE_BYPASS;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLM = 4;
@@ -329,6 +335,44 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 2 */
   HAL_TIM_MspPostInit(&htim2);
+
+}
+
+/**
+  * @brief TIM9 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM9_Init(void)
+{
+
+  /* USER CODE BEGIN TIM9_Init 0 */
+
+  /* USER CODE END TIM9_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+
+  /* USER CODE BEGIN TIM9_Init 1 */
+
+  /* USER CODE END TIM9_Init 1 */
+  htim9.Instance = TIM9;
+  htim9.Init.Prescaler = 7999;
+  htim9.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim9.Init.Period = 65535;
+  htim9.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim9.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim9) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim9, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM9_Init 2 */
+
+  /* USER CODE END TIM9_Init 2 */
 
 }
 
@@ -441,7 +485,7 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin : PC13 */
   GPIO_InitStruct.Pin = GPIO_PIN_13;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
@@ -464,6 +508,10 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(USB_OverCurrent_GPIO_Port, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
 }
 

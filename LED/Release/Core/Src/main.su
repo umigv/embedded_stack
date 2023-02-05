@@ -1,6 +1,8 @@
-../Core/Src/main.c:83:6:HAL_TIM_PWM_PulseFinishedCallback	0	static
-../Core/Src/main.c:88:6:Blink	1248	static
-../Core/Src/main.c:137:6:solidColor	1240	static
-../Core/Src/main.c:234:6:SystemClock_Config	88	static,ignoring_inline_asm
-../Core/Src/main.c:183:5:main	88	static,ignoring_inline_asm
-../Core/Src/main.c:478:6:Error_Handler	0	static,ignoring_inline_asm
+../Core/Src/main.c:96:6:HAL_TIM_PWM_PulseFinishedCallback	0	static
+../Core/Src/main.c:101:6:Blink	1248	static
+../Core/Src/main.c:152:6:solidColor	1240	static
+../Core/Src/main.c:192:6:blink_or_not	1256	static
+../Core/Src/main.c:244:6:HAL_GPIO_EXTI_Callback	0	static
+../Core/Src/main.c:322:6:SystemClock_Config	88	static,ignoring_inline_asm
+../Core/Src/main.c:257:5:main	88	static,ignoring_inline_asm
+../Core/Src/main.c:608:6:Error_Handler	0	static,ignoring_inline_asm
