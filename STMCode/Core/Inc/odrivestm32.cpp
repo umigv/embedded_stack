@@ -24,10 +24,26 @@ void SetVelocityWithCurrent(int motor_number, float velocity, float current_feed
 }
 
 void SetCurrent(int motor_number, float current) {
+	//Create a holder for characters
+	char data[100];
+
+	//Convert your inputs and other chars you want into a char array and find its length
+	n = Sprintf(data, "c %d %f\n", motor_number, current);
+
+	//Transmit your char array
+	HAL_UART_Transmit(&huart4, data, n, 250);
 
 }
 
 void TrapezoidalMove(int motor_number, float position) {
+	//Create a holder for characters
+	char data[100];
+
+	//Convert your inputs and other chars you want into a char array and find its length
+	n = Sprintf(data, "t %d %f\n", motor_number, position);
+
+	//Transmit your char array
+	HAL_UART_Transmit(&huart4, data, n, 250);
 
 }
 
