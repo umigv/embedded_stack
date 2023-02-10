@@ -108,7 +108,6 @@ void readString(char* buf, uint16_t len, int timeout) {
 }
 
 void set_tuning_parameters(int motor_number, float pos_gain_value, float vel_gain_value, float vel_integrator_gain_value){
-
 	char[100] UART_Output;
 	int sizeOfString;
 
