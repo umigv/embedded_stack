@@ -8,7 +8,7 @@ void SetDefaultPosition(int motor_number, float position){
 }
 
 void SetPositionWithVelocity(int motor_number, float position, float velocity_feedforward){
-
+    
 }
 
 void SetPositionWithCurrentVelocity(int motor_number, float position, float velocity_feedforward, float current_feedforward) {
@@ -28,7 +28,6 @@ void SetCurrent(int motor_number, float current) {
 }
 
 void TrapezoidalMove(int motor_number, float position) {
-
 
 }
 
@@ -109,3 +108,24 @@ void readString(char* buf, uint16_t len, int timeout) {
 
 
 }
+
+void set_tuning_parameters(int motor_number, float pos_gain_value, float vel_gain_value, float vel_integrator_gain_value){
+	char[100] UART_Output;
+	int sizeOfString;
+
+	//pos_gain
+	sizeOfString = sprintf(UART_Output, "%s%i%s%d\n", "w axis", motor_number,
+	    ".controller.config.pos_gain ", pos_gain_value);
+	HAL_UART_Transmit(&huart4, UART_Output, sizeOfString, 100);
+
+	//vel_gain
+	sizeOfString = sprintf(UART_Output, "%s%i%s%d\n", "w axis", motor_number,
+	    ".controller.config.vel_gain ", vel_gain_value);
+	HAL_UART_Transmit(&huart4, UART_Output, sizeOfString, 100);
+
+	//vel_integrator_gain
+	sizeOfString = sprintf(UART_Output, "%s%i%s%d\n", "w axis", motor_number,
+	    ".controller.config.vel_integrator_gain ", vel_integrator_gain_value);
+	HAL_UART_Transmit(&huart4, UART_Output, sizeOfString, 100);
+}
+
