@@ -1,7 +1,10 @@
 
 #include "odrivestm32.h"
 void SetDefaultPosition(int motor_number, float position){
-
+	char Data[100];
+	int n;
+	n = sprintf(Data, "p %d %f \n", motor_number, position);
+	HAL_UART_Transmit(&huart4, Data, n, 1000)
 }
 
 void SetPositionWithVelocity(int motor_number, float position, float velocity_feedforward){
