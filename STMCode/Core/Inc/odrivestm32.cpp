@@ -8,11 +8,15 @@ void SetDefaultPosition(int motor_number, float position){
 }
 
 void SetPositionWithVelocity(int motor_number, float position, float velocity_feedforward){
-    
+    char Data[100];
+   int n;
+   n = sprintf(Data, "p %d %f %f %f \n", motor_number, position, velocity_feedforward);
 }
 
 void SetPositionWithCurrentVelocity(int motor_number, float position, float velocity_feedforward, float current_feedforward) {
-
+    char Data[100];
+	int n;
+	n = sprintf(Data, "p %d %f %f %f \n", motor_number, position, velocity_feedforward, current_feedforward);
 }
 
 void SetVelocity(int motor_number, float velocity){
