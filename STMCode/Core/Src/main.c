@@ -21,7 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "odrivestm32.cpp"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -106,9 +106,13 @@ int main(void)
 
 
     /* USER CODE BEGIN 3 */
-	  char Rx_data[26] = "w axis0.requested_state 3\n";
-	  HAL_UART_Transmit(&huart4,Rx_data,26,250);
-	  HAL_Delay(30000);
+	  //char Rx_data[26] = "w axis0.requested_state 3\n";
+	  //HAL_UART_Transmit(&huart4,Rx_data,26,250);
+	  //HAL_Delay(30000);
+	  double velocity = 10.2;
+	  velocity = GetPosition(0);
+	  HAL_Delay(3000);
+	  HAL_Delay(100);
   }
   /* USER CODE END 3 */
 }

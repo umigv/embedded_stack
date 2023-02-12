@@ -1,0 +1,3 @@
+# gitignores for STM library
+STMCode/Debug/*
+STMCode/stmCode Debug.launch
