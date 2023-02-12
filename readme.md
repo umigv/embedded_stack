@@ -62,3 +62,54 @@ Currently, 'ODriveTwoMotors' is the working code to run in the Arduino Mega. It 
 * E-Stop -> Arduino Digital Pin 32
 * ODrive 1 -> Serial 1
 * ODrive 2 -> Serial 2
+
+## NeoPixel Ring LED Setup:
+
+### Configure PWM:
+
+In .ioc file:
+* Assign TIM2_CH3 to PB10
+* In the “Timers” drop down menu, select TIM2
+* Set “Clock Source” to “Internal Clock” 
+* Set “Channel X” to “PWM Generation CHX” ('X' is used channel, ours was 3)
+* Calculate ARR value, see below (round to nearest whole number)
+* Set Counter Period (AutoReload Register) to ARR value
+* In the “System Core” dropdown menu, select “DMA”
+* Select DMA 1
+* Set DMA Request to “TIM2_CH3/UP”
+* Set Direction to “Memory to Peripheral
+* Set Priority to “Very High”
+
+### Code:
+
+**In Private Defines section:**
+* Calculate ZERO value
+* Set NEOPIXEL_ZERO to ZERO value.
+* Calculate ONEvalue
+* Set NEOPIXEL_ONE to ONE value.
+**In User Code 2:**
+```c
+// starts timer for blinky
+HAL_TIM_Base_Start(&htim9);
+```
+### Formulas
+
+* ARR = [(timer frequency) / (PWM frequency)] - 1
+* Timer frequency = 84 (as given for ABP1 in ioc clock configuration)
+* PWM frequency = 1.25 for WS2812 lights (our model)
+* ZERO = (ARR + 1) * 0.32
+* ONE = (ARR + 1) * 0.64
+
+Values we used (may be different if you end up using a different timer):
+
+* ARR = 105
+* ZERO = 34
+* ONE = 68
+
+### Links
+
+[PWM Setup Tutorial](https://forum.digikey.com/t/controlling-neopixels-with-stm32/20527 "Controlling NeoPixels with STM32")
+
+[Timer Setup Tutorial](https://www.digikey.com/en/maker/projects/getting-started-with-stm32-timers-and-timer-interrupts/d08e6493cefa486fb1e79c43c0b08cc6 "Getting Started with STM32 - Timers and Timer Interrupts")
+
+[Interrupt Setup Tutorial](https://microcontrollerslab.com/stm32-blue-pill-external-interrupts-stm32cube-ide/ "STM32 Blue Pill External Interrupts with STM32Cube IDE and HAL Libraries")
