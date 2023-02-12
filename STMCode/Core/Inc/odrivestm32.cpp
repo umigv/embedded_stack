@@ -113,6 +113,31 @@ int32_t readInt(){
 //
 //}
 
+int run_state(int axis, int requested_state, int wait_for_idle, float timeout) {
+   int timeout_ctr = (int)(timeout * 10.0f);
+
+   char Rx_data[26] = "w axis0.requested_state 3\n";
+   Rx_data[6] = axis;
+   Rx_data[24] = requested_state;
+   HAL_UART_Transmit(&huart4,Rx_data,26,250);
+
+   //serial_ << "w axis" << axis << ".requested_state " << requested_state << '\n';
+
+   if (wait_for_idle) {
+       do {
+           HAL_Delay(100);
+
+           char Rx_data[26] = "r axis0.current_state\n";
+           Rx_data[6] = axis;
+           HAL_UART_Transmit(&huart4,Rx_data,26,250);
+
+           //serial_ << "r axis" << axis << ".current_state\n";
+
+       } while (readInt() != 0 && --timeout_ctr > 0);
+   }
+   return timeout_ctr > 0;
+}
+
 void readString(char* buf, uint16_t len, int timeout) {
 //    static const unsigned long timeout = 1000;
 //    unsigned long timeout_start = millis();
