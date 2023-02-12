@@ -21,7 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "ringled.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -95,7 +95,8 @@ int main(void)
   MX_USB_OTG_FS_PCD_Init();
   MX_UART4_Init();
   /* USER CODE BEGIN 2 */
-
+  // Start timer
+  HAL_TIM_Base_Start(&htim9);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -106,6 +107,10 @@ int main(void)
 
 
     /* USER CODE BEGIN 3 */
+
+    // LED function
+    blink_or_not(0,39,76,255,203,5,&htim2,&htim9);
+
 	  char Rx_data[26] = "w axis0.requested_state 3\n";
 	  HAL_UART_Transmit(&huart4,Rx_data,26,250);
 	  HAL_Delay(30000);
