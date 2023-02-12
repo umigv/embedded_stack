@@ -1,11 +1,14 @@
 
 #include "odrivestm32.h"
 void SetDefaultPosition(int motor_number, float position){
-
+	char Data[100];
+	int n;
+	n = sprintf(Data, "p %d %f \n", motor_number, position);
+	HAL_UART_Transmit(&huart4, Data, n, 1000)
 }
 
 void SetPositionWithVelocity(int motor_number, float position, float velocity_feedforward){
-
+    
 }
 
 void SetPositionWithCurrentVelocity(int motor_number, float position, float velocity_feedforward, float current_feedforward) {
@@ -29,11 +32,26 @@ void SetVelocityWithCurrent(int motor_number, float velocity, float current_feed
 }
 
 void SetCurrent(int motor_number, float current) {
+	//Create a holder for characters
+	char data[100];
+
+	//Convert your inputs and other chars you want into a char array and find its length
+	n = Sprintf(data, "c %d %f\n", motor_number, current);
+
+	//Transmit your char array
+	HAL_UART_Transmit(&huart4, data, n, 250);
 
 }
 
 void TrapezoidalMove(int motor_number, float position) {
+	//Create a holder for characters
+	char data[100];
 
+	//Convert your inputs and other chars you want into a char array and find its length
+	n = Sprintf(data, "t %d %f\n", motor_number, position);
+
+	//Transmit your char array
+	HAL_UART_Transmit(&huart4, data, n, 250);
 
 }
 
@@ -114,3 +132,24 @@ void readString(char* buf, uint16_t len, int timeout) {
 
 
 }
+
+void set_tuning_parameters(int motor_number, float pos_gain_value, float vel_gain_value, float vel_integrator_gain_value){
+	char[100] UART_Output;
+	int sizeOfString;
+
+	//pos_gain
+	sizeOfString = sprintf(UART_Output, "%s%i%s%d\n", "w axis", motor_number,
+	    ".controller.config.pos_gain ", pos_gain_value);
+	HAL_UART_Transmit(&huart4, UART_Output, sizeOfString, 100);
+
+	//vel_gain
+	sizeOfString = sprintf(UART_Output, "%s%i%s%d\n", "w axis", motor_number,
+	    ".controller.config.vel_gain ", vel_gain_value);
+	HAL_UART_Transmit(&huart4, UART_Output, sizeOfString, 100);
+
+	//vel_integrator_gain
+	sizeOfString = sprintf(UART_Output, "%s%i%s%d\n", "w axis", motor_number,
+	    ".controller.config.vel_integrator_gain ", vel_integrator_gain_value);
+	HAL_UART_Transmit(&huart4, UART_Output, sizeOfString, 100);
+}
+
