@@ -21,31 +21,15 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "stdbool.h"
+#include "ringled.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-typedef union
-{
-  struct
-  {
-    uint8_t b;
-    uint8_t r;
-    uint8_t g;
-  } color;
-  uint32_t data;
-} PixelRGB_t;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define NEOPIXEL_ZERO	34
-#define NEOPIXEL_ONE	68
-
-#define NUM_PIXELS	12
-
-#define DMA_BUFF_SIZE	(NUM_PIXELS * 24) + 1
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -57,7 +41,7 @@ typedef union
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim9;
 DMA_HandleTypeDef hdma_tim2_up_ch3;
-bool is_blinking = false;
+
 UART_HandleTypeDef huart3;
 
 PCD_HandleTypeDef hpcd_USB_OTG_FS;
@@ -74,98 +58,13 @@ static void MX_USART3_UART_Init(void);
 static void MX_USB_OTG_FS_PCD_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM9_Init(void);
-
 /* USER CODE BEGIN PFP */
-void blink_or_not(uint8_t r, uint8_t g, uint8_t b);
-//#ifdef GNUC
-//#define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
-//#else
-//#define PUTCHAR_PROTOTYPE int fputc(int ch, FILE f)
-//#endif
-//
-//PUTCHAR_PROTOTYPE
-//{
-//  HAL_UART_Transmit(&huart3, (uint8_t)&ch, 1, HAL_MAX_DELAY);
-//  return ch;
-//}
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
-{
-  HAL_TIM_PWM_Stop_DMA(htim, TIM_CHANNEL_3);
-}
 
-
-void blink_or_not(uint8_t r, uint8_t g, uint8_t b){
-	PixelRGB_t pixel[NUM_PIXELS] = {0};
-	uint32_t dmaBuffer[DMA_BUFF_SIZE] = {0};
-	uint32_t *pBuff;
-	uint16_t timer_val;
-	uint16_t timer_val2;
-	timer_val2 = __HAL_TIM_GET_COUNTER(&htim9);
-	timer_val = __HAL_TIM_GET_COUNTER(&htim9);
-
-	while(1){
-		if (is_blinking){
-			if (__HAL_TIM_GET_COUNTER(&htim9) - timer_val >= 16384){
-				if (pixel[0].color.g != 0 || pixel[0].color.b != 0 || pixel[0].color.r != 0){
-//					HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0,1); //debug light
-					pixel[0].color.g = 0;
-					pixel[0].color.r = 0;
-					pixel[0].color.b = 0;
-				} else{
-//					HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0,0); //debug light
-					pixel[0].color.g = g;
-					pixel[0].color.r = r;
-					pixel[0].color.b = b;
-				}
-
-				timer_val = __HAL_TIM_GET_COUNTER(&htim9);
-			}
-		} else{
-//			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0,1); //debug light
-			pixel[0].color.g = g;
-			pixel[0].color.r = r;
-			pixel[0].color.b = b;
-		}
-		if (__HAL_TIM_GET_COUNTER(&htim9) - timer_val2 >= 256) {
-			for (int i = 0; i < (NUM_PIXELS - 1); i++)
-			{
-				pixel[i+1].data = pixel[i].data;
-			}
-			pBuff = dmaBuffer;
-			for (int i = 0; i < NUM_PIXELS; i++)
-			{
-			   for (int j = 23; j >= 0; j--)
-			   {
-				 if ((pixel[i].data >> j) & 0x01)
-				 {
-				   *pBuff = NEOPIXEL_ONE;
-				 }
-				 else
-				 {
-				   *pBuff = NEOPIXEL_ZERO;
-				 }
-				 pBuff++;
-			   }
-			}
-			dmaBuffer[DMA_BUFF_SIZE - 1] = 0; // last element must be 0!
-
-			HAL_TIM_PWM_Start_DMA(&htim2, TIM_CHANNEL_3, dmaBuffer, DMA_BUFF_SIZE);
-			timer_val2 = __HAL_TIM_GET_COUNTER(&htim9);
-		}
-	}
-}
-
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
-{
-    if(GPIO_Pin == GPIO_PIN_13) // INT Source is pin A9
-    {
-    	is_blinking = !is_blinking;
-    }
-}
 /* USER CODE END 0 */
 
 /**
@@ -211,25 +110,9 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-
     /* USER CODE BEGIN 3 */
-	blink_or_not(23,34,50);
-
+	blink_or_not(0,39,76,255,203,5,&htim2,&htim9);
   }
-//  while (1)
-//    {
-//      // If enough time has passed (1 second), toggle LED and get new timestamp
-//
-//	  if (__HAL_TIM_GET_COUNTER(&htim9) - timer_val >= 16384)
-//      {
-//        HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_0);
-//        timer_val = __HAL_TIM_GET_COUNTER(&htim9);
-//      }
-//
-//      /* USER CODE END WHILE */
-//
-//      /* USER CODE BEGIN 3 */
-//    }
   /* USER CODE END 3 */
 }
 
