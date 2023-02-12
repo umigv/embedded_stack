@@ -95,7 +95,7 @@ int main(void)
   MX_USB_OTG_FS_PCD_Init();
   MX_UART4_Init();
   /* USER CODE BEGIN 2 */
-  // Start timer
+  // Start timer for ring led
   HAL_TIM_Base_Start(&htim9);
   /* USER CODE END 2 */
 
