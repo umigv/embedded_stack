@@ -111,7 +111,11 @@ int main(void)
 	  //HAL_Delay(30000);
 	  double velocity = 10.2;
 	  velocity = GetPosition(0);
+	  SetVelocity(0,7);
+	  SetPosition(0,50);
+
 	  HAL_Delay(3000);
+	  velocity = GetPosition(0);
 	  HAL_Delay(100);
   }
   /* USER CODE END 3 */

@@ -4,7 +4,7 @@
 #include "main.h"
 #include <stdlib.h>
  extern UART_HandleTypeDef huart4;
-void SetDefaultPosition(int motor_number, float position);
+void SetPosition(int motor_number, float position);
 void SetPositionWithVelocity(int motor_number, float position, float velocity_feedforward);
 void SetPositionWithCurrentVelocity(int motor_number, float position, float velocity_feedforward, float current_feedforward);
 void SetVelocity(int motor_number, float velocity);

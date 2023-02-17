@@ -1,10 +1,11 @@
 
 #include "odrivestm32.h"
-void SetDefaultPosition(int motor_number, float position){
-	char Data[100];
-	int n;
-	n = sprintf(Data, "p %d %f \n", motor_number, position);
-	HAL_UART_Transmit(&huart4, Data, n, 1000);
+void SetPosition(int motor_number, float position){
+//	char Data[100];
+//	int n;
+//	n = sprintf(Data, "p %d %f 0.0 0.0 \n", motor_number, position);
+//	HAL_UART_Transmit(&huart4, Data, 40, 1000);
+	SetPositionWithCurrentVelocity(motor_number, position,0.0, 0.0);
 }
 
 void SetPositionWithVelocity(int motor_number, float position, float velocity_feedforward){
@@ -17,6 +18,7 @@ void SetPositionWithCurrentVelocity(int motor_number, float position, float velo
     char Data[100];
 	int n;
 	n = sprintf(Data, "p %d %f %f %f \n", motor_number, position, velocity_feedforward, current_feedforward);
+	HAL_UART_Transmit(&huart4, Data, n, 250);
 }
 
 void SetVelocity(int motor_number, float velocity){
@@ -25,14 +27,14 @@ void SetVelocity(int motor_number, float velocity){
 
 void SetVelocityWithCurrent(int motor_number, float velocity, float current_feedforward) {
 	//make empty array for command
-//	char data[100];
-//	int n;
-//
-//	//fill data array with command and find length of command
-//	n = sprintf(data, "v %d %f %f\n", motor_number, velocity, current_feedforward);
-//
-//	//transmit command
-//	HAL_UART_Transmit(&huart4,data,n,250);
+	char data[100];
+	int n;
+
+	//fill data array with command and find length of command
+	n = sprintf(data, "v %d %f %f\n", motor_number, velocity, current_feedforward);
+
+	//transmit command
+	HAL_UART_Transmit(&huart4,data,n,250);
 }
 
 void SetCurrent(int motor_number, float current) {
