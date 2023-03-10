@@ -184,3 +184,11 @@ void set_tuning_parameters(int motor_number, float pos_gain_value, float vel_gai
 //	HAL_UART_Transmit(&huart4, UART_Output, sizeOfString, 100);
 }
 
+void RunCalibrationSequence() {
+	//make array for command
+	char data[26] = "w axis0.requested_state 3\n";
+
+	//transmit command
+	HAL_UART_Transmit(&huart4,data,26,250);
+}
+

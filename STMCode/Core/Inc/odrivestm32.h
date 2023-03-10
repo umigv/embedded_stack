@@ -18,4 +18,4 @@ int32_t readInt();
 bool run_state(int axis, int requested_state, bool wait_for_idle, float timeout);
 void readString(char* buf, uint16_t len, int timeout);
 void set_tuning_parameters(int motor_number, float pos_gain_value, float vel_gain_value, float vel_integrator_gain_value);
-
+void RunCalibrationSequence();
