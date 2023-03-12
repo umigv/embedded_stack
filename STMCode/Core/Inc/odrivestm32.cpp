@@ -5,7 +5,7 @@ void SetPosition(int motor_number, float position){
 //	int n;
 //	n = sprintf(Data, "p %d %f 0.0 0.0 \n", motor_number, position);
 //	HAL_UART_Transmit(&huart4, Data, 40, 1000);
-	SetPositionWithCurrentVelocity(motor_number, position,0.0, 0.0);
+	SetPositionWithCurrentVelocity(motor_number, position,10.0, 0.0);
 }
 
 void SetPositionWithVelocity(int motor_number, float position, float velocity_feedforward){
@@ -78,7 +78,7 @@ float GetVelocity(int motor_number) {        // NEED TO "#include <string.h>" fo
     // Output buffer
     char getV[30];
     // snprintf() works like printf() but stores the would-be output into the getV buffer instead
-    snprintf(getV, 30, "r axis%d.encoder.vel_estimate\n", motor_number);
+    snprintf(getV, 30, "r axis%d.encoder.vel_estimate\n\r", motor_number);
     //snprintf(getV, 40, "odrv0.axis%d.encoder.vel_estimate\n", motor_number);
     // Transmits the getV command to odrive
     // Size parameter might need to be changed (most likely remove the '+ 1')
@@ -116,28 +116,28 @@ int32_t readInt(){
 //}
 
 bool run_state(int axis, int requested_state, bool wait_for_idle, float timeout) {
-//   int timeout_ctr = (int)(timeout * 10.0f);
-//
-//   char Rx_data[26] = "w axis0.requested_state 3\n";
-//   Rx_data[6] = axis;
-//   Rx_data[24] = requested_state;
-//   HAL_UART_Transmit(&huart4,Rx_data,26,250);
-//
-//   //serial_ << "w axis" << axis << ".requested_state " << requested_state << '\n';
-//
-//   if (wait_for_idle) {
-//       do {
-//           HAL_Delay(100);
-//
-//           char Rx_data[26] = "r axis0.current_state\n";
-//           Rx_data[6] = axis;
-//           HAL_UART_Transmit(&huart4,Rx_data,26,250);
-//
-//           //serial_ << "r axis" << axis << ".current_state\n";
-//
-//       } while (readInt() != 0 && --timeout_ctr > 0);
-//   }
-//   return timeout_ctr > 0;
+   int timeout_ctr = (int)(timeout * 10.0f);
+
+   char Rx_data[26] = "w axis0.requested_state 3\n";
+   Rx_data[6] = axis;
+   Rx_data[24] = requested_state;
+   HAL_UART_Transmit(&huart4,Rx_data,26,250);
+
+   //serial_ << "w axis" << axis << ".requested_state " << requested_state << '\n';
+
+   if (wait_for_idle) {
+       do {
+           HAL_Delay(100);
+
+           char Rx_data[26] = "r axis0.current_state\n";
+           Rx_data[6] = axis;
+           HAL_UART_Transmit(&huart4,Rx_data,26,250);
+
+           //serial_ << "r axis" << axis << ".current_state\n";
+
+       } while (readInt() != 0 && --timeout_ctr > 0);
+   }
+   return timeout_ctr > 0;
 }
 
 void readString(char* buf, uint16_t len, int timeout) {
@@ -184,11 +184,17 @@ void set_tuning_parameters(int motor_number, float pos_gain_value, float vel_gai
 //	HAL_UART_Transmit(&huart4, UART_Output, sizeOfString, 100);
 }
 
-void RunCalibrationSequence() {
+void RunCalibrationSequence(UART_HandleTypeDef* uart_handler, int motor_number) {
 	//make array for command
-	char data[26] = "w axis0.requested_state 3\n";
-
+	char data[27];
+	snprintf(data, 27, "w axis%d.requested_state 3\n", motor_number);
 	//transmit command
-	HAL_UART_Transmit(&huart4,data,26,250);
+	HAL_UART_Transmit(uart_handler,data,27,250);
 }
 
+void ClearErrors(){
+	char data[4];
+	snprintf(data, 4, "sc\n\r");
+	HAL_UART_Transmit(&huart4,data,4,250);
+
+}

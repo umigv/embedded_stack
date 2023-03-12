@@ -95,7 +95,7 @@ int main(void)
   MX_USB_OTG_FS_PCD_Init();
   MX_UART4_Init();
   /* USER CODE BEGIN 2 */
-
+//  SetVelocity(0,-5);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -106,17 +106,41 @@ int main(void)
 
 
     /* USER CODE BEGIN 3 */
-	  //char Rx_data[26] = "w axis0.requested_state 3\n";
-	  //HAL_UART_Transmit(&huart4,Rx_data,26,250);
-	  //HAL_Delay(30000);
-	  double velocity = 10.2;
-	  velocity = GetPosition(0);
-	  SetVelocity(0,7);
-	  SetPosition(0,50);
 
-	  HAL_Delay(3000);
-	  velocity = GetPosition(0);
-	  HAL_Delay(100);
+//	  ClearErrors();
+//	  RunCalibrationSequence(&huart4, 0);
+//	  char Rx_data[26] = "w axis0.requested_state 3\n";
+//	  HAL_UART_Transmit(&huart4,Rx_data,26,250);
+//
+//
+//	  HAL_Delay(30000);
+	  double velocity = 10.2;
+////	  SetVelocity(0,-5);
+//	  velocity = GetPosition(0);
+//	  SetVelocity(0,10);
+//	  HAL_Delay(1000);
+//	  SetVelocity(0,5);
+//	  HAL_Delay(1000);
+////	  SetVelocity(0,-1);
+//	  SetVelocity(0,0);
+//	  HAL_Delay(1000);
+////	  SetVelocity(0,-5);
+////	  SetVelocity(0,-5);
+//	  HAL_Delay(1000);
+//	  SetVelocity(0,-10);
+//	  HAL_Delay(1000);
+//	  	  SetVelocity(0,-5);
+//	  	HAL_Delay(1000);
+//	  		  SetVelocity(0,0);
+////	  		SetVelocity(0,1);
+////	  		HAL_Delay(1000);
+////	  			  SetVelocity(0,5);
+////	  			SetVelocity(0,5);
+//	  			  HAL_Delay(1000);
+	  SetPosition(0,-10);
+
+//	  velocity = GetPosition(0);
+//	  HAL_Delay(100);
   }
   /* USER CODE END 3 */
 }
