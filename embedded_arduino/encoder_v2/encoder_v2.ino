@@ -51,7 +51,7 @@ void setup() {
     pinMode(left_GREEN_PIN, INPUT_PULLUP); // left green
     pinMode(left_WHITE_PIN, INPUT_PULLUP); // left white
 
-    Serial.begin(115200);
+    Serial.begin(57600);
     //set up interrupt pins
     attachInterrupt(digitalPinToInterrupt(right_GREEN_PIN), ai0_right, RISING);
     attachInterrupt(digitalPinToInterrupt(right_WHITE_PIN), ai1_right, RISING);
@@ -68,9 +68,9 @@ void setup() {
      nh.initNode();
      nh.advertise(encoder_vel_pub);
      for (int i = 0; i < 36; ++i) {
-     encoder_vel_msg.twist.covariance[i] = 0;
+       encoder_vel_msg.twist.covariance[i] = 0;
      }
-     while (!Serial1); // wait for Arduino Serial Monitor to open
+     //while (!Serial1); // wait for Arduino Serial Monitor to open
      
 }
 
@@ -106,7 +106,9 @@ void loop() {
       encoder_vel_msg.twist.twist.angular.z = angular;
       encoder_vel_pub.publish(&encoder_vel_msg);
       prev_pub_time = millis();
+      nh.spinOnce();
       interrupts();
+      
   }
 
 }
