@@ -41,8 +41,8 @@ double TICK_PER_REV = 720;
 double WHEEL_DIAM = 0.312928; //12.32 inches in meter
 int left_GREEN_PIN = 2;    //left A
 int left_WHITE_PIN = 3;    //left B
-int right_GREEN_PIN = 4;    //right A
-int right_WHITE_PIN = 5;    //right B
+int right_GREEN_PIN = 21;    //right A
+int right_WHITE_PIN = 20;    //right B
 
 void setup() {
     //set up pin modes
@@ -51,7 +51,7 @@ void setup() {
     pinMode(left_GREEN_PIN, INPUT_PULLUP); // left green
     pinMode(left_WHITE_PIN, INPUT_PULLUP); // left white
 
-    Serial.begin(9600);
+    Serial.begin(115200);
     //set up interrupt pins
     attachInterrupt(digitalPinToInterrupt(right_GREEN_PIN), ai0_right, RISING);
     attachInterrupt(digitalPinToInterrupt(right_WHITE_PIN), ai1_right, RISING);
@@ -63,15 +63,15 @@ void setup() {
     left_curr_time = millis();
     
     //uncomment this section when you are ready for ROS
-    /*
-    init ros
+    
+    //init ros
      nh.initNode();
      nh.advertise(encoder_vel_pub);
      for (int i = 0; i < 36; ++i) {
      encoder_vel_msg.twist.covariance[i] = 0;
      }
      while (!Serial1); // wait for Arduino Serial Monitor to open
-     */
+     
 }
 
 void loop() {
@@ -81,31 +81,33 @@ void loop() {
     update_left_dist_time_vel();
 
   //comment out when not debugging, currently right vel is not working 
-  Serial.println(right_vel, 10); 
+  //Serial.println(right_vel, 10); 
   //Serial.println(left_vel, 10);
 
   //maybe need a noInterrupts() function here to protect from weird behavior
   //but it should be fine cause vel only update once per loop
 
   
-//  if (prev_pub_time + pub_period <= millis()){
-//      //uncomment this part and comment the above update functions if you need
-//      //average velocity
-//      /*
-//      update_right_dist_time_vel();
-//      update_left_dist_time_vel();
-//      */
-//    
-//      encoder_vel_msg.header.stamp = nh.now();
-//      encoder_vel_msg.header.frame_id = "encoders";
-//
-//      float linear = (left_vel + right_vel) / 2.0;
-//      float angular = (right_vel - left_vel) / 2.0;
-//      encoder_vel_msg.twist.twist.linear.x = linear;
-//      encoder_vel_msg.twist.twist.angular.z = angular;
-//      encoder_vel_pub.publish(&encoder_vel_msg);
-//      prev_pub_time = millis();
-//  }
+  if (prev_pub_time + pub_period <= millis()){
+      //uncomment this part and comment the above update functions if you need
+      //average velocity
+      
+      /*
+      update_right_dist_time_vel();
+      update_left_dist_time_vel();
+      */
+      noInterrupts();
+      encoder_vel_msg.header.stamp = nh.now();
+      encoder_vel_msg.header.frame_id = "encoders";
+
+      float linear = (left_vel + right_vel) / 2.0;
+      float angular = (right_vel - left_vel) / 2.0;
+      encoder_vel_msg.twist.twist.linear.x = linear;
+      encoder_vel_msg.twist.twist.angular.z = angular;
+      encoder_vel_pub.publish(&encoder_vel_msg);
+      prev_pub_time = millis();
+      interrupts();
+  }
 
 }
 
