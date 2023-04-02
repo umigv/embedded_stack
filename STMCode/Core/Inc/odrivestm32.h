@@ -17,10 +17,10 @@ void SetPositionWithCurrentVelocity(UART_HandleTypeDef *uart_handler, int motor_
 void SetVelocity(UART_HandleTypeDef *uart_handler, int motor_number, float velocity);
 float GetVelocity(UART_HandleTypeDef *uart_handler,int motor_number);
 double GetPosition(UART_HandleTypeDef *uart_handler,int motor_number);
-bool run_state(UART_HandleTypeDef *uart_handler,int axis, int requested_state, bool wait_for_idle, float timeout);
+void run_state(UART_HandleTypeDef *uart_handler,int axis, int requested_state, bool wait_for_idle, float timeout);
 void ClearErrors(UART_HandleTypeDef *uart_handler);
 void Setup_Cur_Lim(UART_HandleTypeDef *uart_handler, double cur_lim);
-void Setup_Cpr(UART_HandleTypeDef *uart_handler, double cpr);
+void Setup_cpr(UART_HandleTypeDef *uart_handler, double cpr);
 /*--------end working odrive libraries for stm--------------*/
 
 

@@ -60,9 +60,10 @@ double readFloat(UART_HandleTypeDef *uart_handler) {
     // return readString().toFloat();
 
     // Uses atof, but might need to be changed to stof depending on readString()
-    char buffer[8];
-    readString(uart_handler, buffer, 8, 200);
+    char buffer[7];
+    readString(uart_handler, buffer, 7, 200);
     double divider = 1000.00;
+
 
     return fmod(atof(buffer), divider) ;
 }
@@ -83,10 +84,10 @@ float GetVelocity(UART_HandleTypeDef *uart_handler,int motor_number) {        //
 }
 	
 double GetPosition(UART_HandleTypeDef *uart_handler,int motor_number){
-	char getV[40];
+	char getV[30];
 	    // snprintf() works like printf() but stores the would-be output into the getV buffer instead
-	snprintf(getV, 40, "r axis%d.encoder.pos_estimate\n", motor_number);
-	char buffer[40];
+	snprintf(getV, 30, "r axis%d.encoder.pos_estimate\n", motor_number);
+	char buffer[30];
 	HAL_UART_Transmit(uart_handler,getV,strlen(getV),250);
 	return readFloat(uart_handler);
 }
@@ -104,17 +105,17 @@ int32_t readInt(UART_HandleTypeDef *uart_handler){
 //
 //}
 
-bool run_state(UART_HandleTypeDef *uart_handler,int axis, int requested_state, bool wait_for_idle, float timeout) {
+void run_state(UART_HandleTypeDef *uart_handler,int axis, int requested_state, bool wait_for_idle, float timeout) {
    int timeout_ctr = (int)(timeout * 10.0f);
    char Rx_data[30];
-   snprintf(Rx_data, 30, "w axis%d.requested_state %d\n", axis, requested_state);
+   snprintf(Rx_data, 30, "w axis%d.requested_state %d\n\r", axis, requested_state);
 
 
 
 //   Rx_data[6] = axis;
 //   Rx_data[24] = requested_state;
-   HAL_UART_Transmit(uart_handler,Rx_data,30,250);
-
+   HAL_UART_Transmit(uart_handler,Rx_data,30,500);
+   readString(uart_handler, Rx_data, 30, 1000);
    //serial_ << "w axis" << axis << ".requested_state " << requested_state << '\n';
 
    if (wait_for_idle) {
@@ -123,13 +124,13 @@ bool run_state(UART_HandleTypeDef *uart_handler,int axis, int requested_state, b
 
            char Rx_data[26] = "r axis0.current_state\n";
            Rx_data[6] = axis;
-           HAL_UART_Transmit(uart_handler,Rx_data,26,250);
+           HAL_UART_Transmit(uart_handler,Rx_data,6,250);
 
            //serial_ << "r axis" << axis << ".current_state\n";
 
        } while (readInt(uart_handler) != 0 && --timeout_ctr > 0);
    }
-   return timeout_ctr > 0;
+//   return timeout_ctr > 0;
 }
 
 void readString(UART_HandleTypeDef *uart_handler,char* buf, uint16_t len, int timeout) {

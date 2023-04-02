@@ -112,16 +112,26 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-//	  run_state(&huart4, 0, 3, false, 1000);
-//	  HAL_Delay(20000);
+//	  HAL_Delay(30000);
+
 //	  run_state(&huart4, 0, 8, false, 1000);
-//	  velocity = GetPosition(&huart4, 0);
-//	  SetVelocity(&huart4, 0, 10);
-//	  SetPosition(&huart4, 0,50);
-	  timer_val = HAL_GetTick();
-	  HAL_Delay(2000);
-	  timer_val = HAL_GetTick() - timer_val;
-//	  HAL_Delay(100);
+////	  run_state(&huart4, 0, 0, false, 1000);
+//
+	  velocity = GetPosition(&huart4, 0);
+////	  timer_val = HAL_GetTick();
+//	  HAL_Delay(1000);
+////	  velocity = GetPosition(&huart4, 0 ) - velocity;
+////	  timer_val = HAL_GetTick() - timer_val;
+
+//	  SetVelocity(&huart4, 0, -10);
+
+	  HAL_Delay(100);
+//	   run_state(&huart4, 0, 8, false, 1000);
+////	  SetPosition(&huart4, 0,50);
+////	  timer_val = HAL_GetTick();
+////	  HAL_Delay(2000);
+////	  timer_val = HAL_GetTick() - timer_val;
+//	  HAL_Delay(10000000);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
