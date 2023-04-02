@@ -18,7 +18,7 @@
 ros::NodeHandle nh;
 geometry_msgs::TwistWithCovarianceStamped encoder_vel_msg;
 ros::Publisher encoder_vel_pub("/encoders/twist", &encoder_vel_msg);
-unsigned long pub_period = 100; //ms between publish
+unsigned long pub_period = 10; //ms between publish
 float prev_pub_time = 0;
 
 //Globals
@@ -88,7 +88,7 @@ void loop() {
   //but it should be fine cause vel only update once per loop
 
   
-  if (prev_pub_time + pub_period <= millis()){
+  if (prev_pub_time + pub_period >= millis()){
       //uncomment this part and comment the above update functions if you need
       //average velocity
       
@@ -96,7 +96,7 @@ void loop() {
       update_right_dist_time_vel();
       update_left_dist_time_vel();
       */
-      noInterrupts();
+      //noInterrupts();
       encoder_vel_msg.header.stamp = nh.now();
       encoder_vel_msg.header.frame_id = "encoders";
 
@@ -107,7 +107,7 @@ void loop() {
       encoder_vel_pub.publish(&encoder_vel_msg);
       prev_pub_time = millis();
       nh.spinOnce();
-      interrupts();
+      //interrupts();
       
   }
 
