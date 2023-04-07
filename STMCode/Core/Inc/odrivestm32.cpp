@@ -62,10 +62,13 @@ double readFloat(UART_HandleTypeDef *uart_handler) {
     // Uses atof, but might need to be changed to stof depending on readString()
     char buffer[7];
     readString(uart_handler, buffer, 7, 200);
-    double divider = 1000.00;
+//    double divider = 1000.00;
+    int n = sizeof(buffer) / sizeof(buffer[0]);
+    for (int i = 0; i < n - 1; i++) {
+        buffer[i] =buffer[i + 1];
+    }
 
-
-    return fmod(atof(buffer), divider) ;
+    return atof(buffer);
 }
 
 float GetVelocity(UART_HandleTypeDef *uart_handler,int motor_number) {        // NEED TO "#include <string.h>" for snprintf()
@@ -215,3 +218,8 @@ double GetVelocity_custom(UART_HandleTypeDef *uart_handler, int motor_number, do
 
 
 }
+
+//double valuefilter(double input, int position_state){
+//	double filtered = fmod(input, position_state);
+//	if ()
+//}

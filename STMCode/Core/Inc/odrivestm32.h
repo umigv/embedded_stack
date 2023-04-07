@@ -24,7 +24,7 @@ void Setup_cpr(UART_HandleTypeDef *uart_handler, double cpr);
 /*--------end working odrive libraries for stm--------------*/
 
 
-
+int position_state = 0;
 double GetVelocity_custom(UART_HandleTypeDef *uart_handler, int motor_number, double wheel_diameter);
 void SetPositionWithVelocity(UART_HandleTypeDef *uart_handler, int motor_number, float position, float velocity_feedforward);
 void SetPositionWithCurrentVelocity(UART_HandleTypeDef *uart_handler, int motor_number, float position, float velocity_feedforward, float current_feedforward);
@@ -36,6 +36,7 @@ void SetVelocityWithCurrent(UART_HandleTypeDef *uart_handler, int motor_number, 
 double readFloat(UART_HandleTypeDef *uart_handler);
 int32_t readInt(UART_HandleTypeDef *uart_handler);
 void readString(UART_HandleTypeDef *uart_handler,char* buf, uint16_t len, int timeout);
+//double valuefilter(double input, int position_state);
 //void set_tuning_parameters(int motor_number, float pos_gain_value, float vel_gain_value, float vel_integrator_gain_value);
 //void RunCalibrationSequence(UART_HandleTypeDef *uart_handler, int motor_number);
 
