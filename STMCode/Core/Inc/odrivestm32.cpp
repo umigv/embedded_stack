@@ -174,10 +174,10 @@ void readString(UART_HandleTypeDef *uart_handler,char* buf, uint16_t len, int ti
 void ClearErrors(UART_HandleTypeDef *uart_handler){
 	char data[10];
 	char buffer[40];
-	snprintf(data, 10, "f 0\n");
+	snprintf(data, 10, "sc\n");
 	HAL_UART_Transmit(uart_handler,data,10,250);
 	readString(uart_handler, buffer, 40, 1000);
-	HAL_Delay(10);
+	HAL_Delay(100);
 }
 
 void Setup_Cur_Lim(UART_HandleTypeDef *uart_handler, double cur_lim){

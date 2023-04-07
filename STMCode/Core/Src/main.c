@@ -118,7 +118,8 @@ int main(void)
 ////	  run_state(&huart4, 0, 0, false, 1000);
 //
 	  velocity = GetPosition(&huart4, 0);
-//	  SetVelocity(&huart4, 0, 0);
+//	  SetVelocity(&huart4, 0, 10);
+	  ClearErrors(&huart4);
 //	  SetPosition(&huart4, 0, 10);
 ////	  timer_val = HAL_GetTick();
 //	  HAL_Delay(1000);
