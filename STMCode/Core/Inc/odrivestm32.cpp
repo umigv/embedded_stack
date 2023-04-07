@@ -143,25 +143,29 @@ void readString(UART_HandleTypeDef *uart_handler,char* buf, uint16_t len, int ti
 
 }
 
-//void set_tuning_parameters(int motor_number, float pos_gain_value, float vel_gain_value, float vel_integrator_gain_value){
-////	char[100] UART_Output;
-////	int sizeOfString;
-////
-////	//pos_gain
-////	sizeOfString = sprintf(UART_Output, "%s%i%s%d\n", "w axis", motor_number,
-////	    ".controller.config.pos_gain ", pos_gain_value);
-////	HAL_UART_Transmit(&huart4, UART_Output, sizeOfString, 100);
-////
-////	//vel_gain
-////	sizeOfString = sprintf(UART_Output, "%s%i%s%d\n", "w axis", motor_number,
-////	    ".controller.config.vel_gain ", vel_gain_value);
-////	HAL_UART_Transmit(&huart4, UART_Output, sizeOfString, 100);
-////
-////	//vel_integrator_gain
-////	sizeOfString = sprintf(UART_Output, "%s%i%s%d\n", "w axis", motor_number,
-////	    ".controller.config.vel_integrator_gain ", vel_integrator_gain_value);
-////	HAL_UART_Transmit(&huart4, UART_Output, sizeOfString, 100);
-//}
+//vel_limit 32
+//pos_gain 34
+//vel_gain 34
+//vel_int_gain 52
+
+void set_tuning_parameters(UART_HandleTypeDef *uart_handler, int motor_number, float pos_gain_value, float vel_gain_value, float vel_integrator_gain_value){
+	char UART_Output [100] ;
+	int sizeOfString;
+
+	//pos_gain
+	sizeOfString = sprintf(UART_Output, "w axis%d.controller.config.pos_gain %.5f\n", motor_number, pos_gain_value);
+	HAL_UART_Transmit(&huart4, UART_Output, sizeOfString, 100);
+	HAL_Delay(100);
+
+	//vel_gain
+	sizeOfString = sprintf(UART_Output, "w axis%d.controller.config.vel_gain %.5f\n", motor_number, vel_gain_value);
+	HAL_UART_Transmit(&huart4, UART_Output, sizeOfString, 100);
+	HAL_Delay(100);
+	//vel_integrator_gain
+	sizeOfString = sprintf(UART_Output, "w axis%d.controller.config.vel_integrator_gain %.7f\n", motor_number, vel_integrator_gain_value);
+	HAL_UART_Transmit(&huart4, UART_Output, sizeOfString, 100);
+	HAL_Delay(100);
+}
 
 //void RunCalibrationSequence(UART_HandleTypeDef* uart_handler, int motor_number) {
 //	//make array for command
@@ -187,7 +191,9 @@ void Setup_Cur_Lim(UART_HandleTypeDef *uart_handler, double cur_lim){
 	snprintf(data1, 60, "w axis1.motor.config.current_lim %.1f\n", cur_lim);
 
 	HAL_UART_Transmit(uart_handler,data0,60,1000);
+	HAL_Delay(100);
 	HAL_UART_Transmit(uart_handler,data1,60,1000);
+	HAL_Delay(100);
 
 
 }
@@ -198,7 +204,9 @@ void Setup_cpr(UART_HandleTypeDef *uart_handler, double cpr){
 	char data1[60];
 	snprintf(data1, 60, "w axis1.encoder.config.cpr %.1f\n", cpr);
 	HAL_UART_Transmit(uart_handler,data0,60,1000);
+	HAL_Delay(100);
 	HAL_UART_Transmit(uart_handler,data1,60,1000);
+	HAL_Delay(100);
 
 }
 
@@ -218,7 +226,16 @@ double GetVelocity_custom(UART_HandleTypeDef *uart_handler, int motor_number, do
 
 
 }
-
+void Setup_vel_limit(UART_HandleTypeDef *uart_handler, double RPS_limit){
+	char data0[60];
+		snprintf(data0, 60, "w axis0.controller.config.vel_limit %.1f\n", RPS_limit);
+		char data1[60];
+		snprintf(data1, 60, "w axis0.controller.config.vel_limit %.1f\n", RPS_limit);
+		HAL_UART_Transmit(uart_handler,data0,60,1000);
+		HAL_Delay(100);
+		HAL_UART_Transmit(uart_handler,data1,60,1000);
+		HAL_Delay(100);
+}
 //double valuefilter(double input, int position_state){
 //	double filtered = fmod(input, position_state);
 //	if ()

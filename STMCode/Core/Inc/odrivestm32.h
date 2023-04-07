@@ -21,6 +21,7 @@ void run_state(UART_HandleTypeDef *uart_handler,int axis, int requested_state, b
 void ClearErrors(UART_HandleTypeDef *uart_handler);
 void Setup_Cur_Lim(UART_HandleTypeDef *uart_handler, double cur_lim);
 void Setup_cpr(UART_HandleTypeDef *uart_handler, double cpr);
+void Setup_vel_limit(UART_HandleTypeDef *uart_handler, double RPS_limit);
 /*--------end working odrive libraries for stm--------------*/
 
 
@@ -37,7 +38,7 @@ double readFloat(UART_HandleTypeDef *uart_handler);
 int32_t readInt(UART_HandleTypeDef *uart_handler);
 void readString(UART_HandleTypeDef *uart_handler,char* buf, uint16_t len, int timeout);
 //double valuefilter(double input, int position_state);
-//void set_tuning_parameters(int motor_number, float pos_gain_value, float vel_gain_value, float vel_integrator_gain_value);
+void set_tuning_parameters(UART_HandleTypeDef *uart_handler, int motor_number, float pos_gain_value, float vel_gain_value, float vel_integrator_gain_value);
 //void RunCalibrationSequence(UART_HandleTypeDef *uart_handler, int motor_number);
 
 

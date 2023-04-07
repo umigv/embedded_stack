@@ -24,5 +24,6 @@ enum AxisState {
     AXIS_STATE_ENCODER_HALL_PHASE_CALIBRATION = 13,
 };
 
+enum MotorAxis {AXIS0, AXIS1};
 
 #endif /* INC_ODRIVESTM32_ENUMS_H_ */

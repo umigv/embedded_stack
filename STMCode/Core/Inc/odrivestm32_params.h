@@ -24,6 +24,8 @@ const int8_t RIGHT_POLARITY = 1;
 //float VEL_TO_RPS = 1.0 / (WHEEL_DIAMETER * PI) * 98.0/3.0;
 const float RPS_LIMIT = 20;
 //const float  VEL_LIMIT = RPS_LIMIT / VEL_TO_RPS; // 1.2 mph (~0.57 m/s) limit
+const double PI = 3.14;
+const double VEL_TO_RPS = 1.0 / (WHEEL_DIAMETER * PI) * 98.0 / 3.0;
 
 
 #endif /* INC_ODRIVESTM32_PARAMS_H_ */

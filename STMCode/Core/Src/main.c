@@ -106,35 +106,54 @@ int main(void)
   HAL_TIM_Base_Start(&htim1);
   double velocity = 10.2;
   uint16_t timer_val;
+
+
+
+  int requested_state = AXIS_STATE_FULL_CALIBRATION_SEQUENCE;
+  run_state(&huart4, AXIS0, requested_state, false, 1000);
+  HAL_Delay(19000);
+  run_state(&huart4, AXIS1, requested_state, false, 1000);
+  HAL_Delay(19000);
+
+  Setup_vel_limit(&huart4, RPS_LIMIT);
+  Setup_Cur_Lim(&huart4, 60.0);
+  Setup_cpr(&huart4, 42.0);
+  set_tuning_parameters(&huart4, AXIS0, 45.0, 0.0132556,  0.00662781);
+  set_tuning_parameters(&huart4, AXIS1, 45.0, 0.0132556,  0.00662781);
+  uint32_t current_time, prev_time;
+  uint32_t pub_period = 100;
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-//	  HAL_Delay(30000);
 
-//	  run_state(&huart4, 0, 8, false, 1000);
-////	  run_state(&huart4, 0, 0, false, 1000);
-//
-	  velocity = GetPosition(&huart4, 0);
-//	  SetVelocity(&huart4, 0, 10);
-	  ClearErrors(&huart4);
-//	  SetPosition(&huart4, 0, 10);
-////	  timer_val = HAL_GetTick();
-//	  HAL_Delay(1000);
-////	  velocity = GetPosition(&huart4, 0 ) - velocity;
-////	  timer_val = HAL_GetTick() - timer_val;
+	  current_time  = HAL_GetTick();
+	  if(prev_time + pub_period <= current_time){
+		  double left_vel = LEFT_POLARITY * GetVelocity(&huart4, AXIS0) / VEL_TO_RPS;
+		  double right_vel = RIGHT_POLARITY * GetVelocity(&huart4, AXIS1) / VEL_TO_RPS;
+		  double linear = (left_vel + right_vel) / 2.0;
+		  double angular = (left_vel - right_vel)/ 2.0;
 
-//	  SetVelocity(&huart4, 0, -10);
+		  prev_time = current_time;
 
-	  HAL_Delay(100);
-//	   run_state(&huart4, 0, 8, false, 1000);
-////	  SetPosition(&huart4, 0,50);
-////	  timer_val = HAL_GetTick();
-////	  HAL_Delay(2000);
-////	  timer_val = HAL_GetTick() - timer_val;
-//	  HAL_Delay(10000000);
+	  }
+
+
+	  //check wireless estop
+	 //TODO: function for reading wireless estop
+
+	  if(wireless_stop){
+		  SetVelocity(&huart4, AXIS0, 0);
+		  SetVelocity(&huart4, AXIS1, 0);
+		  SetVelocity(&huart4, AXIS0, 0);
+		  SetVelocity(&huart4, AXIS1, 0);
+	  }
+
+	  HAL_Delay(1);
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
