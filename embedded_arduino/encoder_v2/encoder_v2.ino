@@ -18,7 +18,7 @@
 ros::NodeHandle nh;
 geometry_msgs::TwistWithCovarianceStamped encoder_vel_msg;
 ros::Publisher encoder_vel_pub("/encoders/twist", &encoder_vel_msg);
-unsigned long pub_period = 10; //ms between publish
+unsigned long pub_period = 100; //ms between publish
 float prev_pub_time = 0;
 
 //Globals
