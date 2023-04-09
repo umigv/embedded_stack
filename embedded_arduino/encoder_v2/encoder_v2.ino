@@ -37,12 +37,13 @@ float left_curr_dist = 0;
 float left_vel = 0;
 
 //constants for the robot
-double TICK_PER_REV = 720;
-double WHEEL_DIAM = 0.312928; //12.32 inches in meter
-int left_GREEN_PIN = 2;    //left A
-int left_WHITE_PIN = 3;    //left B
-int right_GREEN_PIN = 21;    //right A
-int right_WHITE_PIN = 20;    //right B
+const double TICK_PER_REV = 720;
+const double WHEEL_DIAM = 0.312928; //12.32 inches in meter
+const int left_GREEN_PIN = 2;    //left A
+const int left_WHITE_PIN = 3;    //left B
+const int right_GREEN_PIN = 21;    //right A
+const int right_WHITE_PIN = 20;    //right B
+const double WHEE_BASE =  0.762; //distance between 2 wheels in meters
 
 void setup() {
     //set up pin modes
@@ -101,7 +102,7 @@ void loop() {
       encoder_vel_msg.header.frame_id = "encoders";
 
       float linear = (left_vel + right_vel) / 2.0;
-      float angular = (right_vel - left_vel) / 2.0;
+      float angular = (right_vel - left_vel) / WHEE_BASE;
       encoder_vel_msg.twist.twist.linear.x = linear;
       encoder_vel_msg.twist.twist.angular.z = angular;
       encoder_vel_pub.publish(&encoder_vel_msg);
