@@ -1,0 +1,13 @@
+import serial
+import time
+ser = serial.Serial(port = "/devttyS0", baudrate = 9600, timeout = .1)
+try:
+  while true:
+    x = "hello\n"
+    ser.write(bytes(x, 'utf-8'))
+    r = str(ser.readline())
+    msg = r[2:len(r)-3]
+    print(msg)
+    time.sleep(1)
+except KeyboardInterrupt:
+  ser.close()
