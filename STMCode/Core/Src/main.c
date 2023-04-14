@@ -109,19 +109,25 @@ int main(void)
 
 
 
-  int requested_state = AXIS_STATE_FULL_CALIBRATION_SEQUENCE;
-  run_state(&huart4, AXIS0, requested_state, false, 1000);
-  HAL_Delay(19000);
-  run_state(&huart4, AXIS1, requested_state, false, 1000);
-  HAL_Delay(19000);
 
-  Setup_vel_limit(&huart4, RPS_LIMIT);
+//  Setup_vel_limit(&huart4, RPS_LIMIT);
   Setup_Cur_Lim(&huart4, 60.0);
   Setup_cpr(&huart4, 42.0);
   set_tuning_parameters(&huart4, AXIS0, 45.0, 0.0132556,  0.00662781);
   set_tuning_parameters(&huart4, AXIS1, 45.0, 0.0132556,  0.00662781);
   uint32_t current_time, prev_time;
   uint32_t pub_period = 100;
+  int requested_state = AXIS_STATE_FULL_CALIBRATION_SEQUENCE;
+  run_state(&huart4, AXIS0, requested_state, false, 1000);
+  HAL_Delay(19000);
+  SetVelocity(&huart4, AXIS0, 0);
+  run_state(&huart4, AXIS1, requested_state, false, 1000);
+  HAL_Delay(19000);
+  SetVelocity(&huart4, AXIS1, 0);
+
+
+  closed_looped_control(&huart4);
+
 
   /* USER CODE END 2 */
 
@@ -131,16 +137,25 @@ int main(void)
   {
 
 	  current_time  = HAL_GetTick();
-	  if(prev_time + pub_period <= current_time){
-		  double left_vel = LEFT_POLARITY * GetVelocity(&huart4, AXIS0) / VEL_TO_RPS;
-		  double right_vel = RIGHT_POLARITY * GetVelocity(&huart4, AXIS1) / VEL_TO_RPS;
-		  double linear = (left_vel + right_vel) / 2.0;
-		  double angular = (left_vel - right_vel)/ 2.0;
+	  if(prev_time + pub_period >= current_time){
+		  double left_vel_ = LEFT_POLARITY * GetVelocity(&huart4, AXIS0) / VEL_TO_RPS;
+		  double right_vel_ = RIGHT_POLARITY * GetVelocity(&huart4, AXIS1) / VEL_TO_RPS;
+		  double linear = (left_vel_ + right_vel) / 2.0;
+		  double angular = (left_vel_ - right_vel)/ 2.0;
 
 		  prev_time = current_time;
 
 	  }
 
+	  if(!wireless_stop){
+		  	 double speed = left_vel*VEL_TO_RPS;
+		  	 double nouse = GetPosition(&huart4, 0);
+		  SetVelocity(&huart4, AXIS0, 10);
+		  	  nouse = GetPosition(&huart4, 1);
+		  SetVelocity(&huart4, AXIS1, 10);
+		  //TODO:two values harcoded yet
+
+	  }
 
 	  //check wireless estop
 	 //TODO: function for reading wireless estop

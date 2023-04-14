@@ -12,8 +12,8 @@ int eStopMultiplier = 1;
 
 bool is_autonomous = false;
 bool mode_change = true;
-float left_vel = 0;
-float right_vel = 0;
+float left_vel = 20;
+float right_vel = 20;
 uint8_t wireless_stop = 0;
 unsigned long lastData = 0;
 const float WHEEL_BASE = 0.62;

@@ -39,6 +39,7 @@ int32_t readInt(UART_HandleTypeDef *uart_handler);
 void readString(UART_HandleTypeDef *uart_handler,char* buf, uint16_t len, int timeout);
 //double valuefilter(double input, int position_state);
 void set_tuning_parameters(UART_HandleTypeDef *uart_handler, int motor_number, float pos_gain_value, float vel_gain_value, float vel_integrator_gain_value);
+void closed_looped_control(UART_HandleTypeDef *uart_handler);
 //void RunCalibrationSequence(UART_HandleTypeDef *uart_handler, int motor_number);
 
 

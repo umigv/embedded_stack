@@ -117,7 +117,7 @@ void run_state(UART_HandleTypeDef *uart_handler,int axis, int requested_state, b
 
 //   Rx_data[6] = axis;
 //   Rx_data[24] = requested_state;
-   HAL_UART_Transmit(uart_handler,Rx_data,30,500);
+   HAL_UART_Transmit(uart_handler,Rx_data,30,1000);
    readString(uart_handler, Rx_data, 30, 1000);
    //serial_ << "w axis" << axis << ".requested_state " << requested_state << '\n';
 
@@ -240,3 +240,16 @@ void Setup_vel_limit(UART_HandleTypeDef *uart_handler, double RPS_limit){
 //	double filtered = fmod(input, position_state);
 //	if ()
 //}
+
+void closed_looped_control(UART_HandleTypeDef *uart_handler){
+	int requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL;
+	run_state(uart_handler, AXIS0, requested_state, false, 1000);
+
+	HAL_Delay(100);
+	SetVelocity(uart_handler, AXIS0, 0);
+	run_state(uart_handler, AXIS1, requested_state, false, 1000);
+	HAL_Delay(100);
+
+//	SetVelocity(uart_handler, AXIS1, 0);
+
+}
