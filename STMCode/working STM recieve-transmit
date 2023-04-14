@@ -1,0 +1,9 @@
+while (1) {
+  uint_8 test[6];
+  HAL_UART_Receive(&huart4, test, 6, 1000);
+  HAL_UART_Transmit(&huart4, (uint8_t *)test, 6, 1000);
+  HAL_Delay(250);
+}
+
+// Initialized UART4 in the ioc file to Mode: Asynchronous. Changed Baud Rate to 9600. In DMA Settings, add UART4_RX. 
+// Pins: PA0 = UART4_TX, PA1 = UART4_RX.
