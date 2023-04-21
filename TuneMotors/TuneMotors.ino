@@ -20,6 +20,13 @@ inline Print &operator<<(Print &obj, float arg)
   return obj;
 }
 
+/*
+ * README:
+ * The current optimal PID values are the following:
+ * vel_gain: 0.07 for axis0; 0.08 for axis1
+ * vel_integrator_gain: 0.01 for both axes
+ */
+
 
 void setOdriveVelocity(float vel);
 void setOdrivePosition(float vel);
@@ -116,6 +123,61 @@ void loop()
     else Serial.println("Tuning is off.");
   }
 
+  // Actual tuning code
+  else if (tuning && (input == "pg\n" || input == "lpg\n" || input == "rpg\n")) {
+    Serial.println("Please input a pos_gain value. Press 'q' to exit");
+    while(!Serial.available()) {}
+    String input2 = Serial.readString();
+    if (input == "q\n") {
+      Serial.println("Pos_gain cancelled");
+    }
+    else {
+      float pid_val = input2.toFloat();
+      Serial.print("Setting pos_gain to ");
+      Serial.print(pid_val);
+      Serial.println("...");
+      if (input == "pg\n" || input == "lpg\n") odrive_serial << "w axis0.controller.config.pos_gain " << pid_val << "\n";
+      if (input == "pg\n" || input == "rpg\n") odrive_serial << "w axis1.controller.config.pos_gain " << pid_val << "\n";
+      Serial.println("Complete!");
+    }
+  }
+
+  else if (tuning && (input == "vg\n" || input == "lvg\n" || input == "rvg\n")) {
+    Serial.println("Please input a vel_gain value. Press 'q' to exit");
+    while(!Serial.available()) {}
+    String input2 = Serial.readString();
+    if (input == "q\n") {
+      Serial.println("Vel_gain cancelled");
+    }
+    else {
+      float pid_val = input2.toFloat();
+      Serial.print("Setting vel_gain to ");
+      Serial.print(pid_val);
+      Serial.println("...");
+      if (input == "vg\n" || input == "lvg\n") odrive_serial << "w axis0.controller.config.vel_gain " << pid_val << "\n";
+      if (input == "vg\n" || input == "rvg\n") odrive_serial << "w axis1.controller.config.vel_gain " << pid_val << "\n";
+      Serial.println("Complete!");
+    }
+  }
+
+  else if (tuning && (input == "vig\n" || input == "lvig\n" || input == "rvig\n")) {
+    Serial.println("Please input a vel_integrator_gain value. Press 'q' to exit");
+    while(!Serial.available()) {}
+    String input2 = Serial.readString();
+    if (input == "q\n") {
+      Serial.println("Vel_integrator_gain cancelled");
+    }
+    else {
+      float pid_val = input2.toFloat();
+      Serial.print("Setting vel_integrator_gain to ");
+      Serial.print(pid_val);
+      Serial.println("...");
+      if (input == "vig\n" || input == "lvig\n") odrive_serial << "w axis0.controller.config.vel_integrator_gain " << pid_val << "\n";
+      if (input == "vig\n" || input == "rvig\n") odrive_serial << "w axis1.controller.config.vel_integrator_gain " << pid_val << "\n";
+      Serial.println("Complete!");
+    }
+  }
+
   // Set velocity control mode
   else if (input == "v\n") {
     positionMode = false;
@@ -153,8 +215,15 @@ void loop()
         setOdrivePosition(n);
       }
       if (velocityMode) { 
+        bool left = true;
+        bool right = true;
+        if (input[0] == 'r') left = false;
+        if (input[0] == 'l') right = false;
+        if (input[0] == 'r' || input[0] == 'l') n = digitalRead(6) ? 0 : input.substring(1).toFloat();
         Serial.println("Input velocity: " + input);   // so you can see the captured String
-        setOdriveVelocity(n);
+        //setOdriveVelocity(n);
+        if (left) odrive.SetVelocity(0, n * AXIS_0_POLARITY);
+        if (right) odrive.SetVelocity(1, n * AXIS_1_POLARITY);
       }
       if (calibrationMode) {
         if (n == 2) {
@@ -238,8 +307,10 @@ void setupODriveParams(ODriveArduino& odrive) {
   odrive_serial << "w axis0.motor.config.current_lim " << 60.0f << '\n';
   odrive_serial << "w axis0.encoder.config.cpr " << 42.0f << '\n';
   odrive_serial << "w axis0.controller.config.pos_gain " << 6.1f << '\n';
-  odrive_serial << "w axis0.controller.config.vel_gain " << 0.03 << '\n';
-  odrive_serial << "w axis0.controller.config.vel_integrator_gain " << 0.06f << '\n';
+  //odrive_serial << "w axis0.controller.config.vel_gain " << 0.03 << '\n';
+  odrive_serial << "w axis0.controller.config.vel_gain " << 0.07f << '\n';
+  //odrive_serial << "w axis0.controller.config.vel_integrator_gain " << 0.06f << '\n';
+  odrive_serial << "w axis0.controller.config.vel_integrator_gain " << 0.01f << '\n';
   // AXIS1 Plastic
   // pos_gain = 3.6
   // vel_gain = 0.0143
@@ -247,7 +318,9 @@ void setupODriveParams(ODriveArduino& odrive) {
   odrive_serial << "w axis1.motor.config.current_lim " << 60.0f << '\n';
   odrive_serial << "w axis1.encoder.config.cpr " << 42.0f << '\n';
   odrive_serial << "w axis1.controller.config.pos_gain " << 6.1f << '\n';
-  odrive_serial << "w axis1.controller.config.vel_gain " << 0.03 << '\n';
-  odrive_serial << "w axis1.controller.config.vel_integrator_gain " << 0.06f << '\n';
+  //odrive_serial << "w axis1.controller.config.vel_gain " << 0.03 << '\n';
+  odrive_serial << "w axis1.controller.config.vel_gain " << 0.08f << '\n';
+  //odrive_serial << "w axis1.controller.config.vel_integrator_gain " << 0.06f << '\n';
+  odrive_serial << "w axis0.controller.config.vel_integrator_gain " << 0.01f << '\n';
   
 }
