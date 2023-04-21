@@ -21,7 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "odrivestm32.cpp"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -39,6 +39,9 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+TIM_HandleTypeDef htim1;
+TIM_HandleTypeDef htim4;
+
 UART_HandleTypeDef huart4;
 UART_HandleTypeDef huart3;
 
@@ -54,6 +57,8 @@ static void MX_GPIO_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_USB_OTG_FS_PCD_Init(void);
 static void MX_UART4_Init(void);
+static void MX_TIM1_Init(void);
+static void MX_TIM4_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -94,7 +99,45 @@ int main(void)
   MX_USART3_UART_Init();
   MX_USB_OTG_FS_PCD_Init();
   MX_UART4_Init();
+  MX_TIM1_Init();
+  MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
+
+  HAL_TIM_Base_Start(&htim1);
+  double velocity = 10.2;
+  uint16_t timer_val;
+
+//  while(1){
+//	  bool at_highspeed = false;
+//	  double linear = 0.7;
+//	  double angular = 0.3;
+//	  double pos_gain = 45;
+//	  double vel_gain = 0.004;
+//	  double vel_int_gain = 0.0066;
+//	  update_PID_params(&huart4, &at_highspeed, linear, angular, pos_gain, vel_gain, vel_int_gain);
+//
+//	  HAL_Delay(100);
+//
+//  }
+  	  run_state(&huart4, 0, 3, false, 1000);
+//  Setup_vel_limit(&huart4, RPS_LIMIT);
+  Setup_Cur_Lim(&huart4, 60.0);
+  Setup_cpr(&huart4, 42.0);
+  set_tuning_parameters(&huart4, AXIS0, 45.0, 0.0132556,  0.00662781);
+  set_tuning_parameters(&huart4, AXIS1, 45.0, 0.0132556,  0.00662781);
+  uint32_t current_time, prev_time;
+  uint32_t pub_period = 100;
+  int requested_state = AXIS_STATE_FULL_CALIBRATION_SEQUENCE;
+  run_state(&huart4, AXIS0, requested_state, false, 1000);
+  HAL_Delay(19000);
+  SetVelocity(&huart4, AXIS0, 0);
+  run_state(&huart4, AXIS1, requested_state, false, 1000);
+  HAL_Delay(19000);
+  SetVelocity(&huart4, AXIS1, 0);
+
+
+  closed_looped_control(&huart4);
+
 
   /* USER CODE END 2 */
 
@@ -102,13 +145,45 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+
+	  current_time  = HAL_GetTick();
+	  if(prev_time + pub_period >= current_time){
+		  double left_vel_ = LEFT_POLARITY * GetVelocity(&huart4, AXIS0) / VEL_TO_RPS;
+		  double right_vel_ = RIGHT_POLARITY * GetVelocity(&huart4, AXIS1) / VEL_TO_RPS;
+		  double linear = (left_vel_ + right_vel) / 2.0;
+		  double angular = (left_vel_ - right_vel)/ 2.0;
+
+		  prev_time = current_time;
+
+	  }
+
+	  if(!wireless_stop){
+		  	 double speed = left_vel*VEL_TO_RPS;
+		  	 double nouse = GetPosition(&huart4, 0);
+		  SetVelocity(&huart4, AXIS0, 10);
+		  	  nouse = GetPosition(&huart4, 1);
+		  SetVelocity(&huart4, AXIS1, 10);
+		  //TODO:two values harcoded yet
+
+	  }
+
+	  //check wireless estop
+	 //TODO: function for reading wireless estop
+
+	  if(wireless_stop){
+		  SetVelocity(&huart4, AXIS0, 0);
+		  SetVelocity(&huart4, AXIS1, 0);
+		  SetVelocity(&huart4, AXIS0, 0);
+		  SetVelocity(&huart4, AXIS1, 0);
+	  }
+
+	  HAL_Delay(1);
+
     /* USER CODE END WHILE */
 
-
     /* USER CODE BEGIN 3 */
-	  char Rx_data[26] = "w axis0.requested_state 3\n";
-	  HAL_UART_Transmit(&huart4,Rx_data,26,250);
-	  HAL_Delay(30000);
+
+
   }
   /* USER CODE END 3 */
 }
@@ -157,6 +232,97 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief TIM1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM1_Init(void)
+{
+
+  /* USER CODE BEGIN TIM1_Init 0 */
+
+  /* USER CODE END TIM1_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM1_Init 1 */
+
+  /* USER CODE END TIM1_Init 1 */
+  htim1.Instance = TIM1;
+  htim1.Init.Prescaler = 41;
+  htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim1.Init.Period = 65535;
+  htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim1.Init.RepetitionCounter = 0;
+  htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+  if (HAL_TIM_Base_Init(&htim1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim1, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM1_Init 2 */
+
+  /* USER CODE END TIM1_Init 2 */
+
+}
+
+/**
+  * @brief TIM4 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM4_Init(void)
+{
+
+  /* USER CODE BEGIN TIM4_Init 0 */
+
+  /* USER CODE END TIM4_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM4_Init 1 */
+
+  /* USER CODE END TIM4_Init 1 */
+  htim4.Instance = TIM4;
+  htim4.Init.Prescaler = 0;
+  htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim4.Init.Period = 65535;
+  htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim4) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim4, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim4, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM4_Init 2 */
+
+  /* USER CODE END TIM4_Init 2 */
+
 }
 
 /**
