@@ -71,9 +71,9 @@ This is a very handy script to interface with the Arduino Mega and debug the rob
 * `p`: Sets it to position mode. Send a number to set a position for both motors simultaneously. This position is based on the encoder values.
 * `v`: Sets it to velocity mode. Send a number to set a velocity for both motors simultaneously. Send `l` directly followed by a number to set just the left motor to a velocity. Send `r` directly followed by a number to set just the right motor to a velocity.
 * `t`: Toggles the ability to tune. This is *not* a separate mode; it's just an extra step to tune values on the fly.
-* `pg`, `pgl`, and `pgr`: If tuning is enabled, this will prompt the user to enter a value. Otherwise press `q` to cancel. The value entered will be used to set `pos_gain` for both motors, the left motor, or the right motor, respectively.
-* `vg`, `vgl`, and `vgr`: If tuning is enabled, this will prompt the user to enter a value. Otherwise press `q` to cancel. The value entered will be used to set `vel_gain` for both motors, the left motor, or the right motor, respectively.
-* `vig`, `vigl`, and `vigr`: If tuning is enabled, this will prompt the user to enter a value. Otherwise press `q` to cancel. The value entered will be used to set `vel_integrator_gain` for both motors, the left motor, or the right motor, respectively.
+* `pg`, `lpg`, and `rpg`: If tuning is enabled, this will prompt the user to enter a value. Otherwise press `q` to cancel. The value entered will be used to set `pos_gain` for both motors, the left motor, or the right motor, respectively.
+* `vg`, `lvg`, and `rvg`: If tuning is enabled, this will prompt the user to enter a value. Otherwise press `q` to cancel. The value entered will be used to set `vel_gain` for both motors, the left motor, or the right motor, respectively.
+* `vig`, `lvig`, and `rvig`: If tuning is enabled, this will prompt the user to enter a value. Otherwise press `q` to cancel. The value entered will be used to set `vel_integrator_gain` for both motors, the left motor, or the right motor, respectively.
 * `q`: Quits the application. Because this is an Arduino script, it's equivalent to a reset and restart.
 
 ## Pins Used
