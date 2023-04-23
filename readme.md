@@ -53,9 +53,28 @@ If there are errors at any point, type `dump_errors(odrv0)` to view all errors, 
 
 The ODrive's configuration can be saved to a JSON file using the command `odrivetool backup-config my_config.json` and saved to an ODrive from the configuration file using `odrivetool restore-config my_config.json`. The current configuration is stored under `odrive/config/backup.json`.
 
+### Current Working ODrive Parameters
+The main ROS script *should* have these be the default values that are set upon start-up. If not, please configure them to these values or update the README accordingly.  
+
+* `pos_gain`: 6.0 for both axes
+* `vel_gain`: 0.07 for axis0; 0.08 for axis1  
+* `vel_integrator_gain`: 0.01 for both axes  
+
 ## Working Code
 
-Currently, 'ODriveTwoMotors' is the working code to run in the Arduino Mega. It is able to control the odrives and communicate with ROS. 
+Currently, 'ODriveTwoMotors' is the working code to run in the Arduino Mega. It is able to control the odrives and communicate with ROS. 'TuneMotors' is also a working script, but it's meant for debugging. See below for how to use the script. If it gets updated, please update the README accordingly.
+
+### `TuneMotors.ino` Tutorial
+
+This is a very handy script to interface with the Arduino Mega and debug the robot. Make sure to open the Arduino Serial Monitor and have the "Newline" option enabled. Here's all the things a user can do:
+* `c`: Sets it to calibration mode. Send `0` for calibrating axis0 and `1` for calibrating axis1. Do *not* calibrate both motors simultaneously.
+* `p`: Sets it to position mode. Send a number to set a position for both motors simultaneously. This position is based on the encoder values.
+* `v`: Sets it to velocity mode. Send a number to set a velocity for both motors simultaneously. Send `l` directly followed by a number to set just the left motor to a velocity. Send `r` directly followed by a number to set just the right motor to a velocity.
+* `t`: Toggles the ability to tune. This is *not* a separate mode; it's just an extra step to tune values on the fly.
+* `pg`, `pgl`, and `pgr`: If tuning is enabled, this will prompt the user to enter a value. Otherwise press `q` to cancel. The value entered will be used to set `pos_gain` for both motors, the left motor, or the right motor, respectively.
+* `vg`, `vgl`, and `vgr`: If tuning is enabled, this will prompt the user to enter a value. Otherwise press `q` to cancel. The value entered will be used to set `vel_gain` for both motors, the left motor, or the right motor, respectively.
+* `vig`, `vigl`, and `vigr`: If tuning is enabled, this will prompt the user to enter a value. Otherwise press `q` to cancel. The value entered will be used to set `vel_integrator_gain` for both motors, the left motor, or the right motor, respectively.
+* `q`: Quits the application. Because this is an Arduino script, it's equivalent to a reset and restart.
 
 ## Pins Used
 
