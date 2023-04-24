@@ -47,7 +47,7 @@ bool is_autonomous = false;
 bool mode_change = true;
 float left_vel = 0;
 float right_vel = 0;
-uint8_t wireless_stop = 0;
+bool wireless_stop = false;
 unsigned long lastData = 0;
 const float WHEEL_BASE = 0.62;
 const float WHEEL_DIAMETER = 0.3;
@@ -67,10 +67,8 @@ void velCallback(const geometry_msgs::Twist& twist_msg) {
   left_vel = LEFT_POLARITY * (twist_msg.linear.x - WHEEL_BASE * twist_msg.angular.z / 2.0);
   right_vel = RIGHT_POLARITY * (twist_msg.linear.x + WHEEL_BASE * twist_msg.angular.z / 2.0);
 
-  if (!wireless_stop) {
-    odrive.SetVelocity(0, left_vel * VEL_TO_RPS * eStopMultiplier);
-    odrive.SetVelocity(1, right_vel * VEL_TO_RPS * eStopMultiplier);
-  }
+  odrive.SetVelocity(0, left_vel * VEL_TO_RPS * eStopMultiplier);
+  odrive.SetVelocity(1, right_vel * VEL_TO_RPS * eStopMultiplier);
 }
 ros::Subscriber<geometry_msgs::Twist> cmd_vel_sub("/cmd_vel", velCallback);
 
@@ -109,7 +107,7 @@ unsigned long current_time = 0;
 
 void setup() {
   //set up interrupt
-  attachInterrupt(digitalPinToInterrupt(2),interruptEStop,CHANGE);
+  attachInterrupt(digitalPinToInterrupt(2), interruptEStop, CHANGE);
 
   //set up light
   strip.begin();
@@ -133,8 +131,12 @@ void setup() {
   // Calibrate the ODrive
   setupODriveParams(odrive);
   int requested_state = AXIS_STATE_FULL_CALIBRATION_SEQUENCE;
-  odrive.run_state(0, requested_state, true);
-  odrive.run_state(1, requested_state, true);
+  //odrive.run_state(0, requested_state, true);
+  //odrive.run_state(1, requested_state, true);
+  odrive.run_state(0, requested_state, false);
+  delay(19000);
+  odrive.run_state(1, requested_state, false);
+  delay(19000);
 
   closedLoopControl(odrive);
   Serial.begin(115200);
@@ -190,7 +192,7 @@ void loop() {
   else {
     strip.fill(strip.Color(255, 0, 0), 0, strip.numPixels());
     strip.show();
-    mode_change = true;
+    mode_change = false;
   }
 
   nh.spinOnce();
@@ -201,18 +203,21 @@ unsigned long lastTimeStamp = millis();
 
 // Interrupt e-stop function
 void interruptEStop(){
-  if((millis() - lastTimeStamp) >= 1000) {
-    odrive.SetVelocity(0, 0);
-    odrive.SetVelocity(1, 0);
-    if(eStopMultiplier==0) {
-      eStopMultiplier = 1;
-    }
-    else if(eStopMultiplier==1) {
-      eStopMultiplier = 0;
-    }
-    wireless_stop = !wireless_stop;
-    lastTimeStamp = millis();
+  odrive.SetVelocity(0, 0);
+  odrive.SetVelocity(1, 0);
+  if (digitalRead(2) == HIGH) {
+    eStopMultiplier = 0;
+    odrive_serial << "w axis0.controller.config.vel_gain " << 0.01 << '\n';
+    odrive_serial << "w axis1.controller.config.vel_gain " << 0.01 << '\n';
+    wireless_stop = true;
   }
+  else if (digitalRead(2) == LOW) {
+    eStopMultiplier = 1;
+    odrive_serial << "w axis0.controller.config.vel_gain " << 0.07 << '\n';
+    odrive_serial << "w axis1.controller.config.vel_gain " << 0.07 << '\n';
+    wireless_stop = false;
+  }
+  mode_change = true;
 }
 
 void setupODriveParams(ODriveArduino& odrive) {
@@ -220,14 +225,14 @@ void setupODriveParams(ODriveArduino& odrive) {
   odrive_serial << "w axis0.motor.config.current_lim " << 60.0f << '\n';
   odrive_serial << "w axis0.encoder.config.cpr " << 42.0f << '\n';
   odrive_serial << "w axis0.controller.config.pos_gain " << 6.1f << '\n';
-  odrive_serial << "w axis0.controller.config.vel_gain " << 0.03 << '\n';
-  odrive_serial << "w axis0.controller.config.vel_integrator_gain " << 0.06f << '\n';
+  odrive_serial << "w axis0.controller.config.vel_gain " << 0.07 << '\n';
+  odrive_serial << "w axis0.controller.config.vel_integrator_gain " << 0.01f << '\n';
   // AXIS1
   odrive_serial << "w axis1.motor.config.current_lim " << 60.0f << '\n';
   odrive_serial << "w axis1.encoder.config.cpr " << 42.0f << '\n';
   odrive_serial << "w axis1.controller.config.pos_gain " << 6.1f << '\n';
-  odrive_serial << "w axis1.controller.config.vel_gain " << 0.03 << '\n';
-  odrive_serial << "w axis1.controller.config.vel_integrator_gain " << 0.06f << '\n';
+  odrive_serial << "w axis1.controller.config.vel_gain " << 0.07 << '\n';
+  odrive_serial << "w axis1.controller.config.vel_integrator_gain " << 0.01f << '\n';
 }
 
 void closedLoopControl(ODriveArduino& odrive) {
