@@ -108,10 +108,11 @@ void cmdVelSourceCallback(const std_msgs::String& msg) {
 }
 ros::Subscriber<std_msgs::String> cmd_vel_source_sub("/cmd_vel_source", cmdVelSourceCallback);
 
+/*
 //publisher to publish current motor velocity and position (for odometry in the sensor stack)
 geometry_msgs::TwistWithCovarianceStamped encoder_vel_msg;
 ros::Publisher encoder_vel_pub("/encoders/twist", &encoder_vel_msg);
-
+*/
 
 unsigned long pub_period = 100; //ms between publish
 unsigned long prev_time;
@@ -137,10 +138,12 @@ void setup() {
   nh.initNode();
   nh.subscribe(cmd_vel_sub);
   nh.subscribe(cmd_vel_source_sub);
+  /*
   nh.advertise(encoder_vel_pub);
   for (int i = 0; i < 36; ++i) {
     encoder_vel_msg.twist.covariance[i] = 0;
   }
+  */
   prev_time = 0;
   prev_error_time = 0;
   odrive_serial.begin(115200);
@@ -165,7 +168,7 @@ void setup() {
 
 void loop() {
   current_time = millis();
-
+/*
   if (prev_time + pub_period <= current_time)
   {
     encoder_vel_msg.header.stamp = nh.now();
@@ -189,6 +192,7 @@ void loop() {
     
     prev_time = current_time;
   }
+  */
 
   // Error checking and reset if necessary; TODO: Make this more robust
   if (prev_error_time + ERROR_CHECK_TIME <= current_time) {
