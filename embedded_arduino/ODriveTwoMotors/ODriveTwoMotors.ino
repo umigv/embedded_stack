@@ -47,6 +47,13 @@ bool is_autonomous = false;
 bool mode_change = true;
 float left_vel = 0;
 float right_vel = 0;
+float left_vel_actual = 0;
+float right_vel_actual = 0;
+
+// Handling errors
+unsigned long prev_error_time = 0;
+const unsigned long ERROR_CHECK_TIME = 5000; // 5 seconds
+
 bool wireless_stop = false;
 unsigned long lastData = 0;
 const float WHEEL_BASE = 0.62;
@@ -58,6 +65,10 @@ float VEL_TO_RPS = 1.0 / (WHEEL_DIAMETER * PI) * 98.0/3.0;
 const float RPS_LIMIT = 20;
 const float  VEL_LIMIT = RPS_LIMIT / VEL_TO_RPS; // 1.2 mph (~0.57 m/s) limit
 
+// For dampening
+bool dampening_on_l = false;
+bool dampening_on_r = false;
+
 //------ ROS STUFF --------------
 ros::NodeHandle nh;
 //subscriber and callback to recieve velocity messages and move the motors accordingly
@@ -66,6 +77,16 @@ void velCallback(const geometry_msgs::Twist& twist_msg) {
 
   left_vel = LEFT_POLARITY * (twist_msg.linear.x - WHEEL_BASE * twist_msg.angular.z / 2.0);
   right_vel = RIGHT_POLARITY * (twist_msg.linear.x + WHEEL_BASE * twist_msg.angular.z / 2.0);
+
+  // Dampening logic: can only be switched off here
+  if (left_vel >= 0.5 && dampening_on_l) {
+    dampening_on_l = false;
+    odrive_serial << "w axis0.controller.config.vel_gain " << 0.07 << '\n';
+  }
+  if (right_vel >= 0.5 && dampening_on_r) {
+    dampening_on_r = false;
+    odrive_serial << "w axis1.controller.config.vel_gain " << 0.07 << '\n';
+  }
 
   odrive.SetVelocity(0, left_vel * VEL_TO_RPS * eStopMultiplier);
   odrive.SetVelocity(1, right_vel * VEL_TO_RPS * eStopMultiplier);
@@ -102,7 +123,6 @@ Adafruit_NeoPixel strip = Adafruit_NeoPixel(PIXEL_COUNT, PIXEL_PIN, NEO_GRB + NE
 const long blink_interval = 500;
 unsigned long prev_blink_time = 0;
 bool light_on = false;
-
 unsigned long current_time = 0;
 
 void setup() {
@@ -122,6 +142,7 @@ void setup() {
     encoder_vel_msg.twist.covariance[i] = 0;
   }
   prev_time = 0;
+  prev_error_time = 0;
   odrive_serial.begin(115200);
 
   // TODO: Should this even be here?
@@ -150,18 +171,38 @@ void loop() {
     encoder_vel_msg.header.stamp = nh.now();
     encoder_vel_msg.header.frame_id = "encoders";
 
-    float left_vel_ = LEFT_POLARITY * odrive.GetVelocity(0) / VEL_TO_RPS;
-    float right_vel_ = RIGHT_POLARITY * odrive.GetVelocity(1) / VEL_TO_RPS;
-    float linear = (left_vel_ + right_vel_) / 2.0;
-    float angular = (right_vel_ - left_vel_) / 2.0;
+    // OLD VERSION
+    //float left_vel_actual = LEFT_POLARITY * odrive.GetVelocity(0) / VEL_TO_RPS;
+    //float right_vel_actual = RIGHT_POLARITY * odrive.GetVelocity(1) / VEL_TO_RPS;
+
+    // NEW VERSION
+    odrive_serial << "r axis0.sensorless_estimator.vel_estimate\n";
+    left_vel_actual = LEFT_POLARITY * odrive.readFloat() / VEL_TO_RPS;
+    odrive_serial << "r axis1.sensorless_estimator.vel_estimate\n";
+    right_vel_actual = RIGHT_POLARITY * odrive.readFloat() / VEL_TO_RPS;
+    float linear = (left_vel_actual + right_vel_actual) / 2.0;
+    float angular = (right_vel_actual - left_vel_actual) / 2.0;
     encoder_vel_msg.twist.twist.linear.x = linear;
     encoder_vel_msg.twist.twist.angular.z = angular;
 
     encoder_vel_pub.publish(&encoder_vel_msg);
     
     prev_time = current_time;
-    
   }
+
+  // Error checking and reset if necessary; TODO: Make this more robust
+  if (prev_error_time + ERROR_CHECK_TIME <= current_time) {
+    int errors = readErrors(odrive);
+    if (errors) {
+      // Set the light purple
+      strip.fill(strip.Color(255, 0, 255), 0, strip.numPixels());
+      strip.show();
+      delay(1000);
+      return; // Should reset the Arduino, but TODO: this is not a great idea
+    }
+    prev_error_time = current_time;
+  }
+  
   // Logic for setting the light
   if (!wireless_stop) {
     if (is_autonomous) {
@@ -195,6 +236,19 @@ void loop() {
     mode_change = false;
   }
 
+  // Logic for dampening the buzzing or not
+  // Dampening can only be switched on here.
+  // Switching it off happens when a new command is received
+  if (left_vel_actual < 0.5 && !dampening_on_l) {
+    dampening_on_l = true;
+    odrive_serial << "w axis0.controller.config.vel_gain " << 0.01 << '\n';
+  }
+
+  if (right_vel_actual < 0.5 && !dampening_on_r) {
+    dampening_on_r = true;
+    odrive_serial << "w axis1.controller.config.vel_gain " << 0.01 << '\n';
+  }
+
   nh.spinOnce();
   delay(1);
 }
@@ -209,12 +263,15 @@ void interruptEStop(){
     eStopMultiplier = 0;
     odrive_serial << "w axis0.controller.config.vel_gain " << 0.01 << '\n';
     odrive_serial << "w axis1.controller.config.vel_gain " << 0.01 << '\n';
+    dampening_on_l = dampening_on_r = true;
     wireless_stop = true;
   }
   else if (digitalRead(2) == LOW) {
     eStopMultiplier = 1;
-    odrive_serial << "w axis0.controller.config.vel_gain " << 0.07 << '\n';
-    odrive_serial << "w axis1.controller.config.vel_gain " << 0.07 << '\n';
+    // Handled by callback now
+//    odrive_serial << "w axis0.controller.config.vel_gain " << 0.07 << '\n';
+//    odrive_serial << "w axis1.controller.config.vel_gain " << 0.07 << '\n';
+//    dampening_on_l = dampening_on_r = false;
     wireless_stop = false;
   }
   mode_change = true;
@@ -249,4 +306,26 @@ void colorWipe(uint32_t c) {
     strip.setPixelColor(i, c);
     strip.show();
   }
+}
+
+int readErrors(ODriveArduino& odrive) {
+  // TODO: Make this more robust to deal with various errors uniquely
+  int error_code = 0;
+  for (int i = 0; i < 2; ++i) {
+    odrive_serial << "r axis" << i << ".error\n";
+    error_code |= odrive.readInt();
+
+    odrive_serial << "r axis" << i << ".motor.error\n";
+    error_code |= odrive.readInt();
+
+    odrive_serial << "r axis" << i << ".sensorless.error\n";
+    error_code |= odrive.readInt();
+
+    odrive_serial << "r axis" << i << ".encoder.error\n";
+    error_code |= odrive.readInt();
+
+    odrive_serial << "r axis" << i << ".controller.error\n";
+    error_code |= odrive.readInt();
+  }
+  return error_code;
 }
