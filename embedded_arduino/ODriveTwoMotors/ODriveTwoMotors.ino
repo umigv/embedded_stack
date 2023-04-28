@@ -69,6 +69,11 @@ const float  VEL_LIMIT = RPS_LIMIT / VEL_TO_RPS; // 1.2 mph (~0.57 m/s) limit
 bool dampening_on_l = false;
 bool dampening_on_r = false;
 
+// Reset: Sets PC to 0
+// https://www.instructables.com/two-ways-to-reset-arduino-in-software/
+void(* reset_func) (void) = 0;
+
+
 //------ ROS STUFF --------------
 ros::NodeHandle nh;
 //subscriber and callback to recieve velocity messages and move the motors accordingly
@@ -79,11 +84,11 @@ void velCallback(const geometry_msgs::Twist& twist_msg) {
   right_vel = RIGHT_POLARITY * (twist_msg.linear.x + WHEEL_BASE * twist_msg.angular.z / 2.0);
 
   // Dampening logic: can only be switched off here
-  if (left_vel >= 0.5 && dampening_on_l) {
+  if (abs(left_vel) >= 0.5 && dampening_on_l) {
     dampening_on_l = false;
     odrive_serial << "w axis0.controller.config.vel_gain " << 0.07 << '\n';
   }
-  if (right_vel >= 0.5 && dampening_on_r) {
+  if (abs(right_vel) >= 0.5 && dampening_on_r) {
     dampening_on_r = false;
     odrive_serial << "w axis1.controller.config.vel_gain " << 0.07 << '\n';
   }
@@ -192,14 +197,31 @@ void loop() {
 
   // Error checking and reset if necessary; TODO: Make this more robust
   if (prev_error_time + ERROR_CHECK_TIME <= current_time) {
-    int errors = readErrors(odrive);
-    if (errors) {
-      // Set the light purple
-      strip.fill(strip.Color(255, 0, 255), 0, strip.numPixels());
-      strip.show();
-      delay(1000);
-      return; // Should reset the Arduino, but TODO: this is not a great idea
+    bool error_detected = false;
+    for (int i = 0; i < 2; ++i) {
+      int errors = readErrors(odrive, 0);
+      if (errors) {
+        // Set the light purple
+        error_detected = true;
+        strip.fill(strip.Color(255, 0, 255), 0, strip.numPixels());
+        strip.show();
+        delay(1000);
+        odrive_serial << "sc\n";
+
+        // If any motor has an error stop both immediately
+        odrive.SetVelocity(0, 0);
+        odrive.SetVelocity(1, 0);
+
+        // Then calibrate the motor that had the error
+//        odrive.run_state(i, AXIS_STATE_FULL_CALIBRATION_SEQUENCE, false);
+//        delay(19000);
+
+        // OLD; TODO: REMOVE THESE TWO LINES and debug the above code
+        strip.clear();
+        reset_func(); // Should reset the Arduino
+      }
     }
+    if (error_detected) strip.clear(); // Clear out the purple
     prev_error_time = current_time;
   }
   
@@ -239,12 +261,14 @@ void loop() {
   // Logic for dampening the buzzing or not
   // Dampening can only be switched on here.
   // Switching it off happens when a new command is received
-  if (left_vel_actual < 0.5 && !dampening_on_l) {
+  // Dampening should only automatically be switched on if the
+  // desired value is close to 0. That's also another condition.
+  if (abs(left_vel_actual) < 0.5 && abs(left_vel) < 0.5 && !dampening_on_l) {
     dampening_on_l = true;
     odrive_serial << "w axis0.controller.config.vel_gain " << 0.01 << '\n';
   }
 
-  if (right_vel_actual < 0.5 && !dampening_on_r) {
+  if (abs(right_vel_actual) < 0.5 && abs(right_vel) < 0.5 && !dampening_on_r) {
     dampening_on_r = true;
     odrive_serial << "w axis1.controller.config.vel_gain " << 0.01 << '\n';
   }
@@ -308,24 +332,22 @@ void colorWipe(uint32_t c) {
   }
 }
 
-int readErrors(ODriveArduino& odrive) {
+int readErrors(ODriveArduino& odrive, int axis) {
   // TODO: Make this more robust to deal with various errors uniquely
   int error_code = 0;
-  for (int i = 0; i < 2; ++i) {
-    odrive_serial << "r axis" << i << ".error\n";
-    error_code |= odrive.readInt();
+  odrive_serial << "r axis" << axis << ".error\n";
+  error_code |= odrive.readInt();
 
-    odrive_serial << "r axis" << i << ".motor.error\n";
-    error_code |= odrive.readInt();
+  odrive_serial << "r axis" << axis << ".motor.error\n";
+  error_code |= odrive.readInt();
 
-    odrive_serial << "r axis" << i << ".sensorless.error\n";
-    error_code |= odrive.readInt();
+  odrive_serial << "r axis" << axis << ".sensorless.error\n";
+  error_code |= odrive.readInt();
 
-    odrive_serial << "r axis" << i << ".encoder.error\n";
-    error_code |= odrive.readInt();
+  odrive_serial << "r axis" << axis << ".encoder.error\n";
+  error_code |= odrive.readInt();
 
-    odrive_serial << "r axis" << i << ".controller.error\n";
-    error_code |= odrive.readInt();
-  }
+  odrive_serial << "r axis" << axis << ".controller.error\n";
+  error_code |= odrive.readInt();
   return error_code;
 }
