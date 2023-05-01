@@ -50,6 +50,8 @@ float right_vel = 0;
 float left_vel_actual = 0;
 float right_vel_actual = 0;
 
+const float DAMPENING_THRESHOLD = 0.1;
+
 // Handling errors
 unsigned long prev_error_time = 0;
 const unsigned long ERROR_CHECK_TIME = 5000; // 5 seconds
@@ -74,7 +76,8 @@ bool dampening_on_r = false;
 void(* reset_func) (void) = 0;
 
 
-//------ ROS STUFF --------------
+// =|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|= ROS FUNCTIONALITY BEGIN =|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|= //
+
 ros::NodeHandle nh;
 //subscriber and callback to recieve velocity messages and move the motors accordingly
 void velCallback(const geometry_msgs::Twist& twist_msg) {
@@ -84,11 +87,11 @@ void velCallback(const geometry_msgs::Twist& twist_msg) {
   right_vel = RIGHT_POLARITY * (twist_msg.linear.x + WHEEL_BASE * twist_msg.angular.z / 2.0);
 
   // Dampening logic: can only be switched off here
-  if (abs(left_vel) >= 0.5 && dampening_on_l) {
+  if (abs(left_vel) >= DAMPENING_THRESHOLD && dampening_on_l) {
     dampening_on_l = false;
     odrive_serial << "w axis0.controller.config.vel_gain " << 0.07 << '\n';
   }
-  if (abs(right_vel) >= 0.5 && dampening_on_r) {
+  if (abs(right_vel) >= DAMPENING_THRESHOLD && dampening_on_r) {
     dampening_on_r = false;
     odrive_serial << "w axis1.controller.config.vel_gain " << 0.07 << '\n';
   }
@@ -121,7 +124,10 @@ ros::Publisher encoder_vel_pub("/encoders/twist", &encoder_vel_msg);
 unsigned long pub_period = 100; //ms between publish
 unsigned long prev_time;
 
-//----- ADAFRUIT LIGHT ------
+// =|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|= ROS FUNCTIONALITY END |==|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|= //
+
+// =|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|= LIGHT-RING BEGIN =|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|= //
+
 #define PIXEL_PIN 9
 #define PIXEL_COUNT 12
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(PIXEL_COUNT, PIXEL_PIN, NEO_GRB + NEO_KHZ800);
@@ -129,6 +135,10 @@ const long blink_interval = 500;
 unsigned long prev_blink_time = 0;
 bool light_on = false;
 unsigned long current_time = 0;
+
+// =|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|= LIGHT-RING END =|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|= //
+
+// =|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|= SETUP BEGIN =|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|= //
 
 void setup() {
   //set up interrupt
@@ -168,8 +178,18 @@ void setup() {
   Serial.begin(115200);
 }
 
+// =|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|= SETUP END =|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|= //
+
+// =|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|= LOOP BEGIN =|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|= //
+
 void loop() {
+  // ======================================== GENERAL PURPOSE BEGIN ======================================== //
+  
   current_time = millis();
+  
+  // ======================================== GENERAL PURPOSE END ========================================== //
+
+  // ======================================== ENCODER PUBLISHING BEGIN ===================================== //
 
   if (prev_time + pub_period <= current_time)
   {
@@ -195,35 +215,56 @@ void loop() {
     prev_time = current_time;
   }
 
+  // ======================================== ENCODER PUBLISHING END ======================================= //
+
+  // ======================================== ERROR HANDLING BEGIN ========================================= //
+
   // Error checking and reset if necessary; TODO: Make this more robust
   if (prev_error_time + ERROR_CHECK_TIME <= current_time) {
     bool error_detected = false;
+    int errors[2] = { 0, 0 };
+    
+    // First read the errors
     for (int i = 0; i < 2; ++i) {
-      int errors = readErrors(odrive, 0);
-      if (errors) {
-        // Set the light purple
-        error_detected = true;
-        strip.fill(strip.Color(255, 0, 255), 0, strip.numPixels());
-        strip.show();
-        delay(1000);
-        odrive_serial << "sc\n";
-
-        // If any motor has an error stop both immediately
-        odrive.SetVelocity(0, 0);
-        odrive.SetVelocity(1, 0);
-
-        // Then calibrate the motor that had the error
-//        odrive.run_state(i, AXIS_STATE_FULL_CALIBRATION_SEQUENCE, false);
-//        delay(19000);
-
-        // OLD; TODO: REMOVE THESE TWO LINES and debug the above code
-        strip.clear();
-        reset_func(); // Should reset the Arduino
-      }
+      errors[i] = readErrors(odrive, i);
+      if (errors[i]) error_detected = true;
     }
-    if (error_detected) strip.clear(); // Clear out the purple
+
+    // Then clear the errors if needed
+    if (error_detected) {
+
+      // If any motor has an error stop both immediately
+      odrive.SetVelocity(0, 0);
+      odrive.SetVelocity(1, 0);
+      odrive_serial << "w axis0.controller.config.vel_gain " << 0.01 << '\n';
+      odrive_serial << "w axis1.controller.config.vel_gain " << 0.01 << '\n';
+      dampening_on_l = dampening_on_r = true;
+      
+      // Set the light purple
+      strip.fill(strip.Color(255, 0, 255), 0, strip.numPixels());
+      strip.show();
+
+      // Actually clear the errors
+      odrive_serial << "sc\n";
+      for (int i = 0; i < 2; ++i) {
+        if (errors[i]) {
+          // Then calibrate the motor that had the error
+          odrive.run_state(i, AXIS_STATE_FULL_CALIBRATION_SEQUENCE, false);
+          delay(19000);
+          odrive.run_state(i, AXIS_STATE_CLOSED_LOOP_CONTROL, false);
+        }
+      }
+
+      // Clear out the purple
+      strip.clear();
+      mode_change = true;
+    }
     prev_error_time = current_time;
   }
+
+  // ======================================== ERROR HANDLING END =========================================== //
+  
+  // ======================================== LIGHT SETTING BEGIN ========================================== //
   
   // Logic for setting the light
   if (!wireless_stop) {
@@ -258,24 +299,37 @@ void loop() {
     mode_change = false;
   }
 
+  // ======================================== LIGHT SETTING END ============================================ //
+
+  // ======================================== SOUND DAMPENING BEGIN ======================================== //
+
   // Logic for dampening the buzzing or not
   // Dampening can only be switched on here.
   // Switching it off happens when a new command is received
   // Dampening should only automatically be switched on if the
   // desired value is close to 0. That's also another condition.
-  if (abs(left_vel_actual) < 0.5 && abs(left_vel) < 0.5 && !dampening_on_l) {
+  if (abs(left_vel_actual) < DAMPENING_THRESHOLD && abs(left_vel) < DAMPENING_THRESHOLD && !dampening_on_l) {
     dampening_on_l = true;
     odrive_serial << "w axis0.controller.config.vel_gain " << 0.01 << '\n';
   }
 
-  if (abs(right_vel_actual) < 0.5 && abs(right_vel) < 0.5 && !dampening_on_r) {
+  if (abs(right_vel_actual) < DAMPENING_THRESHOLD && abs(right_vel) < DAMPENING_THRESHOLD && !dampening_on_r) {
     dampening_on_r = true;
     odrive_serial << "w axis1.controller.config.vel_gain " << 0.01 << '\n';
   }
 
+  // ======================================== SOUND DAMPENING END ======================================== //
+
+  // ======================================== ROS LOOP CODE BEGIN ======================================== //
+  
   nh.spinOnce();
   delay(1);
+
+  // ======================================== ROS LOOP CODE END ========================================== //
 }
+// =|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|= LOOP END =|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|= //
+
+// =|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|= E-STOP BEGIN =|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|= //
 
 unsigned long lastTimeStamp = millis();
 
@@ -292,14 +346,14 @@ void interruptEStop(){
   }
   else if (digitalRead(2) == LOW) {
     eStopMultiplier = 1;
-    // Handled by callback now
-//    odrive_serial << "w axis0.controller.config.vel_gain " << 0.07 << '\n';
-//    odrive_serial << "w axis1.controller.config.vel_gain " << 0.07 << '\n';
-//    dampening_on_l = dampening_on_r = false;
     wireless_stop = false;
   }
   mode_change = true;
 }
+
+// =|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|= E-STOP END =|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|= //
+
+// =|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|= OTHER UTILITIES BEGIN =|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|= //
 
 void setupODriveParams(ODriveArduino& odrive) {
   // AXIS0
@@ -326,7 +380,7 @@ void closedLoopControl(ODriveArduino& odrive) {
 }
 
 void colorWipe(uint32_t c) {
-  for(uint16_t i=0; i<strip.numPixels(); i++) {
+  for (uint16_t i = 0; i < strip.numPixels(); i++) {
     strip.setPixelColor(i, c);
     strip.show();
   }
@@ -351,3 +405,5 @@ int readErrors(ODriveArduino& odrive, int axis) {
   error_code |= odrive.readInt();
   return error_code;
 }
+
+// =|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|= OTHER UTILITIES END =|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|= //
