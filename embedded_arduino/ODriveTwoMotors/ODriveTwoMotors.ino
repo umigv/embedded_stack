@@ -44,7 +44,7 @@ void closedLoopControl(ODriveArduino& odrive);
 int eStopMultiplier = 1;
 
 bool is_autonomous = false;
-bool mode_change = true;
+volatile bool mode_change = true;
 float left_vel = 0;
 float right_vel = 0;
 float left_vel_actual = 0;
@@ -72,7 +72,7 @@ bool dampening_on_l = false;
 bool dampening_on_r = false;
 
 // Error detection flag
-bool error_detected = false;
+volatile bool error_detected = false;
 
 
 // Reset: Sets PC to 0
@@ -136,7 +136,7 @@ unsigned long prev_time;
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(PIXEL_COUNT, PIXEL_PIN, NEO_GRB + NEO_KHZ800);
 const long blink_interval = 500;
 unsigned long prev_blink_time = 0;
-bool light_on = false;
+volatile bool light_on = false;
 unsigned long current_time = 0;
 ISR(TIMER4_COMPA_vect){
  if (!wireless_stop) {
@@ -257,7 +257,7 @@ void loop() {
   // ======================================== GENERAL PURPOSE END ========================================== //
 
   // ======================================== ENCODER PUBLISHING BEGIN ===================================== //
-
+/*
   if (prev_time + pub_period <= current_time)
   {
     encoder_vel_msg.header.stamp = nh.now();
@@ -281,7 +281,7 @@ void loop() {
     
     prev_time = current_time;
   }
-
+*/
   // ======================================== ENCODER PUBLISHING END ======================================= //
 
   // ======================================== ERROR HANDLING BEGIN ========================================= //
