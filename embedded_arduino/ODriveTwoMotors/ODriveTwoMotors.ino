@@ -71,6 +71,10 @@ const float  VEL_LIMIT = RPS_LIMIT / VEL_TO_RPS; // 1.2 mph (~0.57 m/s) limit
 bool dampening_on_l = false;
 bool dampening_on_r = false;
 
+// Error detection flag
+bool error_detected = false;
+
+
 // Reset: Sets PC to 0
 // https://www.instructables.com/two-ways-to-reset-arduino-in-software/
 void(* reset_func) (void) = 0;
@@ -120,7 +124,6 @@ ros::Subscriber<std_msgs::String> cmd_vel_source_sub("/cmd_vel_source", cmdVelSo
 geometry_msgs::TwistWithCovarianceStamped encoder_vel_msg;
 ros::Publisher encoder_vel_pub("/encoders/twist", &encoder_vel_msg);
 
-
 unsigned long pub_period = 100; //ms between publish
 unsigned long prev_time;
 
@@ -135,6 +138,53 @@ const long blink_interval = 500;
 unsigned long prev_blink_time = 0;
 bool light_on = false;
 unsigned long current_time = 0;
+ISR(TIMER4_COMPA_vect){
+ if (!wireless_stop) {
+    if (is_autonomous) {
+      if (light_on) {
+        if(error_detected){
+          strip.fill(strip.Color(255, 0, 255), 0, strip.numPixels());
+          strip.show();
+        }
+        else{
+          strip.fill(strip.Color(0, 255, 0), 0, strip.numPixels());
+          strip.show();
+        }
+       
+      }
+      else {
+        strip.clear();
+        strip.show();
+      }
+      light_on = !light_on;
+      mode_change = false;
+    }
+    else {
+      //teleop - solid blue
+      //what is mode change??
+      //if (mode_change) {
+        if(error_detected){
+          strip.clear();
+          strip.fill(strip.Color(255, 0, 255), 0, strip.numPixels());
+          strip.show();
+        }
+        else{
+          strip.clear();
+          strip.fill(strip.Color(0, 0, 255), 0, strip.numPixels());
+          strip.show();
+        }
+        
+      //}
+      mode_change = false;
+    }
+  }
+  else {
+    strip.fill(strip.Color(255, 0, 0), 0, strip.numPixels());
+    strip.show();
+    mode_change = false;
+  }
+
+}
 
 // =|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|= LIGHT-RING END =|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|= //
 
@@ -173,6 +223,23 @@ void setup() {
   delay(19000);
   odrive.run_state(1, requested_state, false);
   delay(19000);
+
+
+  //set timer4 interrupt at 1Hz for light blink; set timer4 interrupt at 1Hz
+  cli();//stop interrupts
+  TCCR4A = 0;// set entire TCCR1A register to 0
+  TCCR4B = 0;// same for TCCR1B
+  TCNT4  = 0;//initialize counter value to 0
+  // set compare match register for 1hz increments
+  OCR4A = 15624/1;// = (16*10^6) / (1*1024) - 1 (must be <65536)
+  // turn on CTC mode
+  TCCR4B |= (1 << WGM12);
+  // Set CS12 and CS10 bits for 1024 prescaler
+  TCCR4B |= (1 << CS12) | (1 << CS10);  
+  // enable timer compare interrupt
+  TIMSK4 |= (1 << OCIE4A);
+  sei();//allow interrupts
+
 
   closedLoopControl(odrive);
   Serial.begin(115200);
@@ -221,7 +288,6 @@ void loop() {
 
   // Error checking and reset if necessary; TODO: Make this more robust
   if (prev_error_time + ERROR_CHECK_TIME <= current_time) {
-    bool error_detected = false;
     int errors[2] = { 0, 0 };
     
     // First read the errors
@@ -239,10 +305,11 @@ void loop() {
       odrive_serial << "w axis0.controller.config.vel_gain " << 0.01 << '\n';
       odrive_serial << "w axis1.controller.config.vel_gain " << 0.01 << '\n';
       dampening_on_l = dampening_on_r = true;
-      
+      /*
       // Set the light purple
       strip.fill(strip.Color(255, 0, 255), 0, strip.numPixels());
       strip.show();
+      */
 
       // Actually clear the errors
       odrive_serial << "sc\n";
@@ -254,9 +321,9 @@ void loop() {
           odrive.run_state(i, AXIS_STATE_CLOSED_LOOP_CONTROL, false);
         }
       }
-
+      error_detected = false;
       // Clear out the purple
-      strip.clear();
+      // strip.clear();
       mode_change = true;
     }
     prev_error_time = current_time;
@@ -265,7 +332,7 @@ void loop() {
   // ======================================== ERROR HANDLING END =========================================== //
   
   // ======================================== LIGHT SETTING BEGIN ========================================== //
-  
+  /*
   // Logic for setting the light
   if (!wireless_stop) {
     if (is_autonomous) {
@@ -298,7 +365,7 @@ void loop() {
     strip.show();
     mode_change = false;
   }
-
+*/
   // ======================================== LIGHT SETTING END ============================================ //
 
   // ======================================== SOUND DAMPENING BEGIN ======================================== //
