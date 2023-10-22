@@ -32,9 +32,11 @@ template<>        inline Print& operator <<(Print &obj, float arg) { obj.print(a
 // pin 18: TX - connect to ODrive RX
 // See https://www.arduino.cc/reference/en/language/functions/communication/serial/ for other options
 HardwareSerial& odrive_serial = Serial1;
+HardwareSerial& odrive_serial2 = Serial2; 
 
 // ODrive object
 ODriveArduino odrive(odrive_serial);
+ODriveArduino odrive2(odrive_serial2);
 
 void setupODrive(ODriveArduino& odrive);
 void setupODriveParams(ODriveArduino& odrive);
@@ -93,11 +95,11 @@ void velCallback(const geometry_msgs::Twist& twist_msg) {
   }
   if (abs(right_vel) >= DAMPENING_THRESHOLD && dampening_on_r) {
     dampening_on_r = false;
-    odrive_serial << "w axis1.controller.config.vel_gain " << 0.07 << '\n';
+    odrive_serial2 << "w axis0.controller.config.vel_gain " << 0.07 << '\n';
   }
 
   odrive.SetVelocity(0, left_vel * VEL_TO_RPS * eStopMultiplier);
-  odrive.SetVelocity(1, right_vel * VEL_TO_RPS * eStopMultiplier);
+  odrive2.SetVelocity(0, right_vel* VEL_TO_RPS * eStopMultiplier);
 }
 ros::Subscriber<geometry_msgs::Twist> cmd_vel_sub("/cmd_vel", velCallback);
 
@@ -159,22 +161,25 @@ void setup() {
   prev_time = 0;
   prev_error_time = 0;
   odrive_serial.begin(115200);
+  odrive_serial2.begin(115200);
 
   // TODO: Should this even be here?
   // Serial to PC
-  while (!Serial1); // wait for Arduino Serial Monitor to open
-
+  while (!Serial1 || !Serial2); // wait for Arduino Serial Monitor to open
   // Calibrate the ODrive
   setupODriveParams(odrive);
+  setupODriveParams(odrive2);
   int requested_state = AXIS_STATE_FULL_CALIBRATION_SEQUENCE;
   //odrive.run_state(0, requested_state, true);
   //odrive.run_state(1, requested_state, true);
   odrive.run_state(0, requested_state, false);
   delay(19000);
-  odrive.run_state(1, requested_state, false);
+  odrive2.run_state(0, requested_state, false);
+
   delay(19000);
 
   closedLoopControl(odrive);
+  closedLoopControl(odrive2); 
   Serial.begin(115200);
 }
 
@@ -203,8 +208,8 @@ void loop() {
     // NEW VERSION
     odrive_serial << "r axis0.sensorless_estimator.vel_estimate\n";
     left_vel_actual = LEFT_POLARITY * odrive.readFloat() / VEL_TO_RPS;
-    odrive_serial << "r axis1.sensorless_estimator.vel_estimate\n";
-    right_vel_actual = RIGHT_POLARITY * odrive.readFloat() / VEL_TO_RPS;
+    odrive_serial2 << "r axis0.sensorless_estimator.vel_estimate\n";
+    right_vel_actual = RIGHT_POLARITY * odrive2.readFloat() / VEL_TO_RPS;
     float linear = (left_vel_actual + right_vel_actual) / 2.0;
     float angular = (right_vel_actual - left_vel_actual) / 2.0;
     encoder_vel_msg.twist.twist.linear.x = linear;
@@ -225,19 +230,20 @@ void loop() {
     int errors[2] = { 0, 0 };
     
     // First read the errors
-    for (int i = 0; i < 2; ++i) {
-      errors[i] = readErrors(odrive, i);
-      if (errors[i]) error_detected = true;
-    }
+
+
+    errors[0] = readErrors(odrive, 0);
+    errors[1] = readErrors(odrive2, 0);
+    error_detected = errors[0] || errors[1] ? true : false;
 
     // Then clear the errors if needed
     if (error_detected) {
 
       // If any motor has an error stop both immediately
       odrive.SetVelocity(0, 0);
-      odrive.SetVelocity(1, 0);
+      odrive2.SetVelocity(0, 0);
       odrive_serial << "w axis0.controller.config.vel_gain " << 0.01 << '\n';
-      odrive_serial << "w axis1.controller.config.vel_gain " << 0.01 << '\n';
+      odrive_serial2 << "w axis0.controller.config.vel_gain " << 0.01 << '\n';
       dampening_on_l = dampening_on_r = true;
       
       // Set the light purple
@@ -246,13 +252,18 @@ void loop() {
 
       // Actually clear the errors
       odrive_serial << "sc\n";
-      for (int i = 0; i < 2; ++i) {
-        if (errors[i]) {
-          // Then calibrate the motor that had the error
-          odrive.run_state(i, AXIS_STATE_FULL_CALIBRATION_SEQUENCE, false);
-          delay(19000);
-          odrive.run_state(i, AXIS_STATE_CLOSED_LOOP_CONTROL, false);
-        }
+      odrive_serial2 << "sc\n";
+      if (errors[0]) {
+        // Then calibrate the motor that had the error
+        odrive.run_state(0, AXIS_STATE_FULL_CALIBRATION_SEQUENCE, false);
+        delay(19000);
+        odrive.run_state(0, AXIS_STATE_CLOSED_LOOP_CONTROL, false);
+      }
+      
+      if (errors[1]) {
+        odrive2.run_state(0, AXIS_STATE_FULL_CALIBRATION_SEQUENCE, false);
+        delay(19000);
+        odrive2.run_state(0, AXIS_STATE_CLOSED_LOOP_CONTROL, false);          
       }
 
       // Clear out the purple
@@ -315,7 +326,7 @@ void loop() {
 
   if (abs(right_vel_actual) < DAMPENING_THRESHOLD && abs(right_vel) < DAMPENING_THRESHOLD && !dampening_on_r) {
     dampening_on_r = true;
-    odrive_serial << "w axis1.controller.config.vel_gain " << 0.01 << '\n';
+    odrive_serial2 << "w axis0.controller.config.vel_gain " << 0.01 << '\n';
   }
 
   // ======================================== SOUND DAMPENING END ======================================== //
@@ -336,11 +347,11 @@ unsigned long lastTimeStamp = millis();
 // Interrupt e-stop function
 void interruptEStop(){
   odrive.SetVelocity(0, 0);
-  odrive.SetVelocity(1, 0);
+  odrive2.SetVelocity(0, 0);
   if (digitalRead(2) == HIGH) {
     eStopMultiplier = 0;
     odrive_serial << "w axis0.controller.config.vel_gain " << 0.01 << '\n';
-    odrive_serial << "w axis1.controller.config.vel_gain " << 0.01 << '\n';
+    odrive_serial2 << "w axis0.controller.config.vel_gain " << 0.01 << '\n';
     dampening_on_l = dampening_on_r = true;
     wireless_stop = true;
   }
@@ -356,27 +367,25 @@ void interruptEStop(){
 // =|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|= OTHER UTILITIES BEGIN =|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|=|= //
 
 void setupODriveParams(ODriveArduino& odrive) {
-  // AXIS0
+  // AXIS0 - odrive
   odrive_serial << "w axis0.motor.config.current_lim " << 60.0f << '\n';
   odrive_serial << "w axis0.encoder.config.cpr " << 42.0f << '\n';
   odrive_serial << "w axis0.controller.config.pos_gain " << 6.1f << '\n';
   odrive_serial << "w axis0.controller.config.vel_gain " << 0.07 << '\n';
   odrive_serial << "w axis0.controller.config.vel_integrator_gain " << 0.01f << '\n';
-  // AXIS1
-  odrive_serial << "w axis1.motor.config.current_lim " << 60.0f << '\n';
-  odrive_serial << "w axis1.encoder.config.cpr " << 42.0f << '\n';
-  odrive_serial << "w axis1.controller.config.pos_gain " << 6.1f << '\n';
-  odrive_serial << "w axis1.controller.config.vel_gain " << 0.07 << '\n';
-  odrive_serial << "w axis1.controller.config.vel_integrator_gain " << 0.01f << '\n';
+  // AXIS0 - odrive2
+  odrive_serial2 << "w axis0.motor.config.current_lim " << 60.0f << '\n';
+  odrive_serial2 << "w axis0.encoder.config.cpr " << 42.0f << '\n';
+  odrive_serial2 << "w axis0.controller.config.pos_gain " << 6.1f << '\n';
+  odrive_serial2 << "w axis0.controller.config.vel_gain " << 0.07 << '\n';
+  odrive_serial2 << "w axis0.controller.config.vel_integrator_gain " << 0.01f << '\n';
 }
 
 void closedLoopControl(ODriveArduino& odrive) {
   int requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL;
   odrive.run_state(0, requested_state, false);
-  odrive.run_state(1, requested_state, false);
   
   odrive.SetVelocity(0, 0);
-  odrive.SetVelocity(1, 0);
 }
 
 void colorWipe(uint32_t c) {
