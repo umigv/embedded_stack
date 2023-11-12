@@ -143,8 +143,7 @@ unsigned long current_time = 0;
 void setup() {
   //set up interrupt
   attachInterrupt(digitalPinToInterrupt(2), interruptEStop, CHANGE);
-  attachInterrupt(digitalPinToInterrupt(3), interruptEStop, CHANGE);
-    //attach phys estop to orange side
+  attachInterrupt(digitalPinToInterrupt(3), interruptEStop, CHANGE); //attach phys estop to the orange side of the button
 
   //set up light
   strip.begin();
