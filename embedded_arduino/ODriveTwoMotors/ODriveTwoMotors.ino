@@ -368,17 +368,17 @@ void interruptEStop(){
 
 void setupODriveParams(ODriveArduino& odrive) {
   // AXIS0 - odrive
-  odrive_serial << "w axis0.motor.config.current_lim " << 60.0f << '\n';
+  //odrive_serial << "w axis0.motor.config.current_lim " << 60.0f << '\n';
   odrive_serial << "w axis0.encoder.config.cpr " << 42.0f << '\n';
-  odrive_serial << "w axis0.controller.config.pos_gain " << 6.1f << '\n';
-  odrive_serial << "w axis0.controller.config.vel_gain " << 0.07 << '\n';
-  odrive_serial << "w axis0.controller.config.vel_integrator_gain " << 0.01f << '\n';
+  odrive_serial << "w axis0.controller.config.pos_gain " << 1.0f << '\n';
+  odrive_serial << "w axis0.controller.config.vel_gain " << 0.01f << '\n';
+  odrive_serial << "w axis0.controller.config.vel_integrator_gain " << 0.0f << '\n';
   // AXIS0 - odrive2
-  odrive_serial2 << "w axis0.motor.config.current_lim " << 60.0f << '\n';
+  //odrive_serial2 << "w axis0.motor.config.current_lim " << 60.0f << '\n';
   odrive_serial2 << "w axis0.encoder.config.cpr " << 42.0f << '\n';
-  odrive_serial2 << "w axis0.controller.config.pos_gain " << 6.1f << '\n';
-  odrive_serial2 << "w axis0.controller.config.vel_gain " << 0.07 << '\n';
-  odrive_serial2 << "w axis0.controller.config.vel_integrator_gain " << 0.01f << '\n';
+  odrive_serial2 << "w axis0.controller.config.pos_gain " << 1.0f << '\n';
+  odrive_serial2 << "w axis0.controller.config.vel_gain " << 0.01f << '\n';
+  odrive_serial2 << "w axis0.controller.config.vel_integrator_gain " << 0.0f << '\n';
 }
 
 void closedLoopControl(ODriveArduino& odrive) {
