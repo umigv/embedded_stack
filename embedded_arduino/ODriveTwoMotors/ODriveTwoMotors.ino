@@ -165,21 +165,24 @@ void setup() {
 
   // TODO: Should this even be here?
   // Serial to PC
-  while (!Serial1 || !Serial2); // wait for Arduino Serial Monitor to open
+  //while (!Serial1 || !Serial2); // wait for Arduino Serial Monitor to open
   // Calibrate the ODrive
-  setupODriveParams(odrive);
-  setupODriveParams(odrive2);
+  //setupODriveParams(odrive);
+  //setupODriveParams(odrive2);
   int requested_state = AXIS_STATE_FULL_CALIBRATION_SEQUENCE;
   //odrive.run_state(0, requested_state, true);
   //odrive.run_state(1, requested_state, true);
   odrive.run_state(0, requested_state, false);
   delay(19000);
   odrive2.run_state(0, requested_state, false);
-
   delay(19000);
 
   closedLoopControl(odrive);
   closedLoopControl(odrive2); 
+
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, LOW);
+
   Serial.begin(115200);
 }
 
@@ -206,6 +209,7 @@ void loop() {
     //float right_vel_actual = RIGHT_POLARITY * odrive.GetVelocity(1) / VEL_TO_RPS;
 
     // NEW VERSION
+    /*
     odrive_serial << "r axis0.sensorless_estimator.vel_estimate\n";
     left_vel_actual = LEFT_POLARITY * odrive.readFloat() / VEL_TO_RPS;
     odrive_serial2 << "r axis0.sensorless_estimator.vel_estimate\n";
@@ -216,14 +220,15 @@ void loop() {
     encoder_vel_msg.twist.twist.angular.z = angular;
 
     encoder_vel_pub.publish(&encoder_vel_msg);
-    
+    */
     prev_time = current_time;
+    
   }
 
   // ======================================== ENCODER PUBLISHING END ======================================= //
 
   // ======================================== ERROR HANDLING BEGIN ========================================= //
-
+/*
   // Error checking and reset if necessary; TODO: Make this more robust
   if (prev_error_time + ERROR_CHECK_TIME <= current_time) {
     bool error_detected = false;
@@ -272,7 +277,7 @@ void loop() {
     }
     prev_error_time = current_time;
   }
-
+*/
   // ======================================== ERROR HANDLING END =========================================== //
   
   // ======================================== LIGHT SETTING BEGIN ========================================== //
@@ -313,7 +318,7 @@ void loop() {
   // ======================================== LIGHT SETTING END ============================================ //
 
   // ======================================== SOUND DAMPENING BEGIN ======================================== //
-
+/*
   // Logic for dampening the buzzing or not
   // Dampening can only be switched on here.
   // Switching it off happens when a new command is received
@@ -328,7 +333,7 @@ void loop() {
     dampening_on_r = true;
     odrive_serial2 << "w axis0.controller.config.vel_gain " << 0.01 << '\n';
   }
-
+*/
   // ======================================== SOUND DAMPENING END ======================================== //
 
   // ======================================== ROS LOOP CODE BEGIN ======================================== //
@@ -368,13 +373,13 @@ void interruptEStop(){
 
 void setupODriveParams(ODriveArduino& odrive) {
   // AXIS0 - odrive
-  //odrive_serial << "w axis0.motor.config.current_lim " << 60.0f << '\n';
+  odrive_serial << "w axis0.motor.config.current_lim " << 60.0f << '\n';
   odrive_serial << "w axis0.encoder.config.cpr " << 42.0f << '\n';
   odrive_serial << "w axis0.controller.config.pos_gain " << 1.0f << '\n';
   odrive_serial << "w axis0.controller.config.vel_gain " << 0.01f << '\n';
   odrive_serial << "w axis0.controller.config.vel_integrator_gain " << 0.0f << '\n';
   // AXIS0 - odrive2
-  //odrive_serial2 << "w axis0.motor.config.current_lim " << 60.0f << '\n';
+  odrive_serial2 << "w axis0.motor.config.current_lim " << 60.0f << '\n';
   odrive_serial2 << "w axis0.encoder.config.cpr " << 42.0f << '\n';
   odrive_serial2 << "w axis0.controller.config.pos_gain " << 1.0f << '\n';
   odrive_serial2 << "w axis0.controller.config.vel_gain " << 0.01f << '\n';
