@@ -53,7 +53,7 @@ If there are errors at any point, type `dump_errors(odrv0)` to view all errors, 
 
 The ODrive's configuration can be saved to a JSON file using the command `odrivetool backup-config my_config.json` and saved to an ODrive from the configuration file using `odrivetool restore-config my_config.json`. The current configuration is stored under `odrive/config/backup.json`.
 
-### Current Working ODrive Parameters
+### Current Working ODrive Parameters (Outdated, please load in the config files directly)
 The main ROS script *should* have these be the default values that are set upon start-up. If not, please configure them to these values or update the README accordingly.  
 
 * `pos_gain`: 6.0 for both axes
@@ -78,6 +78,7 @@ This is a very handy script to interface with the Arduino Mega and debug the rob
 
 ## Pins Used
 
-* E-Stop -> Arduino Digital Pin 32
-* ODrive 1 -> Serial 1
-* ODrive 2 -> Serial 2
+* Remote E-Stop -> Arduino Digital Pin 2
+* Physical E-stop -> Arduino Digital Pin 3
+* ODrive Right Wheel -> Serial 1
+* ODrive Left Wheel -> Serial 2
