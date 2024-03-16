@@ -85,8 +85,8 @@ ros::NodeHandle nh;
 void velCallback(const geometry_msgs::Twist& twist_msg) {
   lastData = millis();
 
-  left_vel = LEFT_POLARITY * (twist_msg.linear.x - WHEEL_BASE * twist_msg.angular.z / 2.0);
-  right_vel = RIGHT_POLARITY * (twist_msg.linear.x + WHEEL_BASE * twist_msg.angular.z / 2.0);
+  left_vel = LEFT_POLARITY * (twist_msg.linear.x - WHEEL_BASE * -1 * twist_msg.angular.z / 2.0);
+  right_vel = RIGHT_POLARITY * (twist_msg.linear.x + WHEEL_BASE * -1 * twist_msg.angular.z / 2.0);
 
   // Dampening logic: can only be switched off here
   if (abs(left_vel) >= DAMPENING_THRESHOLD && dampening_on_l) {
@@ -175,10 +175,11 @@ void setup() {
   int requested_state = AXIS_STATE_FULL_CALIBRATION_SEQUENCE;
   //odrive.run_state(0, requested_state, true);
   //odrive.run_state(1, requested_state, true);
-  odrive.run_state(0, requested_state, false);
-  delay(56000);
-  odrive2.run_state(0, requested_state, false);
-  delay(56000);
+  
+  odrive.run_state(0, requested_state, true);
+  delay(60000);
+  odrive2.run_state(0, requested_state, true);
+  delay(60000);
 
   closedLoopControl(odrive);
   closedLoopControl(odrive2); 
@@ -233,6 +234,7 @@ void loop() {
   // ======================================== ERROR HANDLING BEGIN ========================================= //
 
   // Error checking and reset if necessary; TODO: Make this more robust
+  /*
   if (prev_error_time + ERROR_CHECK_TIME <= current_time) {
     bool error_detected = false;
     int errors[2] = { 0, 0 };
@@ -265,7 +267,7 @@ void loop() {
     }
     prev_error_time = current_time;
   }
-
+*/
   // ======================================== ERROR HANDLING END =========================================== //
   
   // ======================================== LIGHT SETTING BEGIN ========================================== //
