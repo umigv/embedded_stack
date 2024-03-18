@@ -89,14 +89,14 @@ void velCallback(const geometry_msgs::Twist& twist_msg) {
   right_vel = RIGHT_POLARITY * (twist_msg.linear.x + WHEEL_BASE * -1 * twist_msg.angular.z / 2.0);
 
   // Dampening logic: can only be switched off here
-  if (abs(left_vel) >= DAMPENING_THRESHOLD && dampening_on_l) {
-    dampening_on_l = false;
-    odrive_serial << "w axis0.controller.config.vel_gain " << 0.07 << '\n';
-  }
-  if (abs(right_vel) >= DAMPENING_THRESHOLD && dampening_on_r) {
-    dampening_on_r = false;
-    odrive_serial2 << "w axis0.controller.config.vel_gain " << 0.07 << '\n';
-  }
+//  if (abs(left_vel) >= DAMPENING_THRESHOLD && dampening_on_l) {
+//    dampening_on_l = false;
+//    odrive_serial << "w axis0.controller.config.vel_gain " << 0.07 << '\n';
+//  }
+//  if (abs(right_vel) >= DAMPENING_THRESHOLD && dampening_on_r) {
+//    dampening_on_r = false;
+//    odrive_serial2 << "w axis0.controller.config.vel_gain " << 0.07 << '\n';
+//  }
 
   odrive.SetVelocity(0, left_vel * VEL_TO_RPS * eStopMultiplier);
   odrive2.SetVelocity(0, right_vel* VEL_TO_RPS * eStopMultiplier);
@@ -343,14 +343,14 @@ unsigned long lastTimeStamp = millis();
 void interruptEStop(){
   odrive.SetVelocity(0, 0);
   odrive2.SetVelocity(0, 0);
-  if (digitalRead(2) == HIGH) {
+  if (digitalRead(2) == HIGH || digitalRead(3) == LOW) {
     eStopMultiplier = 0;
-    odrive_serial << "w axis0.controller.config.vel_gain " << 0.01 << '\n';
-    odrive_serial2 << "w axis0.controller.config.vel_gain " << 0.01 << '\n';
-    dampening_on_l = dampening_on_r = true;
+//    odrive_serial << "w axis0.controller.config.vel_gain " << 0.01 << '\n';
+//    odrive_serial2 << "w axis0.controller.config.vel_gain " << 0.01 << '\n';
+//    dampening_on_l = dampening_on_r = true;
     wireless_stop = true;
   }
-  else if (digitalRead(2) == LOW) {
+  else if (digitalRead(2) == LOW || digitalRead(3) == HIGH) {
     eStopMultiplier = 1;
     wireless_stop = false;
   }
