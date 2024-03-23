@@ -85,18 +85,18 @@ ros::NodeHandle nh;
 void velCallback(const geometry_msgs::Twist& twist_msg) {
   lastData = millis();
 
-  left_vel = LEFT_POLARITY * (twist_msg.linear.x - WHEEL_BASE * twist_msg.angular.z / 2.0);
-  right_vel = RIGHT_POLARITY * (twist_msg.linear.x + WHEEL_BASE * twist_msg.angular.z / 2.0);
+  left_vel = LEFT_POLARITY * (twist_msg.linear.x - WHEEL_BASE * -1 * twist_msg.angular.z / 2.0);
+  right_vel = RIGHT_POLARITY * (twist_msg.linear.x + WHEEL_BASE * -1 * twist_msg.angular.z / 2.0);
 
   // Dampening logic: can only be switched off here
-  if (abs(left_vel) >= DAMPENING_THRESHOLD && dampening_on_l) {
-    dampening_on_l = false;
-    odrive_serial << "w axis0.controller.config.vel_gain " << 0.07 << '\n';
-  }
-  if (abs(right_vel) >= DAMPENING_THRESHOLD && dampening_on_r) {
-    dampening_on_r = false;
-    odrive_serial2 << "w axis0.controller.config.vel_gain " << 0.07 << '\n';
-  }
+//  if (abs(left_vel) >= DAMPENING_THRESHOLD && dampening_on_l) {
+//    dampening_on_l = false;
+//    odrive_serial << "w axis0.controller.config.vel_gain " << 0.07 << '\n';
+//  }
+//  if (abs(right_vel) >= DAMPENING_THRESHOLD && dampening_on_r) {
+//    dampening_on_r = false;
+//    odrive_serial2 << "w axis0.controller.config.vel_gain " << 0.07 << '\n';
+//  }
 
   odrive.SetVelocity(0, left_vel * VEL_TO_RPS * eStopMultiplier);
   odrive2.SetVelocity(0, right_vel* VEL_TO_RPS * eStopMultiplier);
@@ -144,6 +144,8 @@ unsigned long current_time = 0;
 
 void setup() {
   //set up interrupt
+  pinMode(4,OUTPUT);
+  digitalWrite(4,HIGH);
   attachInterrupt(digitalPinToInterrupt(2), interruptEStop, CHANGE);
   attachInterrupt(digitalPinToInterrupt(3), interruptEStop, CHANGE); //attach phys estop to the orange side of the button
 
@@ -173,10 +175,11 @@ void setup() {
   int requested_state = AXIS_STATE_FULL_CALIBRATION_SEQUENCE;
   //odrive.run_state(0, requested_state, true);
   //odrive.run_state(1, requested_state, true);
-  odrive.run_state(0, requested_state, false);
-  delay(19000);
-  odrive2.run_state(0, requested_state, false);
-  delay(19000);
+  
+  odrive.run_state(0, requested_state, true);
+  delay(60000);
+  odrive2.run_state(0, requested_state, true);
+  delay(60000);
 
   closedLoopControl(odrive);
   closedLoopControl(odrive2); 
@@ -229,15 +232,14 @@ void loop() {
   // ======================================== ENCODER PUBLISHING END ======================================= //
 
   // ======================================== ERROR HANDLING BEGIN ========================================= //
-/*
+
   // Error checking and reset if necessary; TODO: Make this more robust
+  /*
   if (prev_error_time + ERROR_CHECK_TIME <= current_time) {
     bool error_detected = false;
     int errors[2] = { 0, 0 };
     
     // First read the errors
-
-
     errors[0] = readErrors(odrive, 0);
     errors[1] = readErrors(odrive2, 0);
     error_detected = errors[0] || errors[1] ? true : false;
@@ -248,9 +250,6 @@ void loop() {
       // If any motor has an error stop both immediately
       odrive.SetVelocity(0, 0);
       odrive2.SetVelocity(0, 0);
-      odrive_serial << "w axis0.controller.config.vel_gain " << 0.01 << '\n';
-      odrive_serial2 << "w axis0.controller.config.vel_gain " << 0.01 << '\n';
-      dampening_on_l = dampening_on_r = true;
       
       // Set the light purple
       strip.fill(strip.Color(255, 0, 255), 0, strip.numPixels());
@@ -259,18 +258,8 @@ void loop() {
       // Actually clear the errors
       odrive_serial << "sc\n";
       odrive_serial2 << "sc\n";
-      if (errors[0]) {
-        // Then calibrate the motor that had the error
-        odrive.run_state(0, AXIS_STATE_FULL_CALIBRATION_SEQUENCE, false);
-        delay(19000);
-        odrive.run_state(0, AXIS_STATE_CLOSED_LOOP_CONTROL, false);
-      }
-      
-      if (errors[1]) {
-        odrive2.run_state(0, AXIS_STATE_FULL_CALIBRATION_SEQUENCE, false);
-        delay(19000);
-        odrive2.run_state(0, AXIS_STATE_CLOSED_LOOP_CONTROL, false);          
-      }
+      odrive.run_state(0, AXIS_STATE_CLOSED_LOOP_CONTROL, false);
+      odrive2.run_state(0, AXIS_STATE_CLOSED_LOOP_CONTROL, false);          
 
       // Clear out the purple
       strip.clear();
@@ -354,14 +343,14 @@ unsigned long lastTimeStamp = millis();
 void interruptEStop(){
   odrive.SetVelocity(0, 0);
   odrive2.SetVelocity(0, 0);
-  if (digitalRead(2) == HIGH) {
+  if (digitalRead(2) == HIGH || digitalRead(3) == LOW) {
     eStopMultiplier = 0;
-    odrive_serial << "w axis0.controller.config.vel_gain " << 0.01 << '\n';
-    odrive_serial2 << "w axis0.controller.config.vel_gain " << 0.01 << '\n';
-    dampening_on_l = dampening_on_r = true;
+//    odrive_serial << "w axis0.controller.config.vel_gain " << 0.01 << '\n';
+//    odrive_serial2 << "w axis0.controller.config.vel_gain " << 0.01 << '\n';
+//    dampening_on_l = dampening_on_r = true;
     wireless_stop = true;
   }
-  else if (digitalRead(2) == LOW) {
+  else if (digitalRead(2) == LOW || digitalRead(3) == HIGH) {
     eStopMultiplier = 1;
     wireless_stop = false;
   }
