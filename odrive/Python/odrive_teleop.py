@@ -2,6 +2,7 @@ import rospy
 from geometry_msgs.msg import Twist
 import odrive
 from odrive.enums import *
+from odrive.utils import dump_errors
 import time
 import math
 
@@ -45,12 +46,18 @@ my_drive.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
 my_drive.axis0.controller.config.control_mode = CONTROL_MODE_VELOCITY_CONTROL
 
 
+# Dump current errors
+print("Current ODrive errors:")
+dump_errors(my_drive, True) # True clears errors
+print("Cleared all errors")
+
+
 def set_velocity(left_vel, right_vel):
     """
     Sets the velocity for the motors using ODrive.
     """
     my_drive.axis0.controller.input_vel = left_vel * VEL_TO_RPS * eStopMultiplier
-    my_drive.axis1.controller.input_vel = right_vel * VEL_TO_RPS * eStopMultiplier
+    # my_drive.axis1.controller.input_vel = right_vel * VEL_TO_RPS * eStopMultiplier
     time.sleep(0.01)
 
 def vel_callback(twist_msg):
@@ -67,6 +74,7 @@ def listener():
     rospy.init_node('motor_controller')
     rospy.Subscriber("/cmd_vel", Twist, vel_callback)
     rospy.spin()
+
 
 if __name__ == '__main__':
     listener()
