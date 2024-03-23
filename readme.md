@@ -51,7 +51,7 @@ If there are errors at any point, type `dump_errors(odrv0)` to view all errors, 
 
 ### ODrive Configuration
 
-The ODrive's configuration can be saved to a JSON file using the command `odrivetool backup-config my_config.json`. It can be saved to an ODrive from the configuration file using `odrivetool restore-config my_config.json` and in `odrivetool`, `odrv0.save_configuration()`. The current configuration is stored under `odrive/config/OdriveS1_current_config`. You must make sure the firmware version for the OdriveS1 is _._._ for the configuration to work. You can update the firmware version by following this [article](https://docs.odriverobotics.com/v/latest/guides/firmware-update.html)
+The ODrive's configuration can be saved to a JSON file using the command `odrivetool backup-config my_config.json`. It can be saved to an ODrive from the configuration file using `odrivetool restore-config my_config.json` and in `odrivetool`, `odrv0.save_configuration()`. The current configuration is stored under `odrive/config/OdriveS1_current_config`. You must make sure the firmware version for the OdriveS1 is 0.6.7 for the configuration to work. You can update the firmware version by following this [article](https://docs.odriverobotics.com/v/latest/guides/firmware-update.html)
 
 ### Current Working ODrive Parameters (Outdated, please load in the config files directly)
 The main ROS script *should* have these be the default values that are set upon start-up. If not, please configure them to these values or update the README accordingly.  
