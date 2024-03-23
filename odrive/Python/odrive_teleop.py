@@ -58,6 +58,8 @@ def vel_callback(twist_msg):
     left_vel = LEFT_POLARITY * (twist_msg.linear.x - WHEEL_BASE * twist_msg.angular.z / 2.0)
     right_vel = RIGHT_POLARITY * (twist_msg.linear.x + WHEEL_BASE * twist_msg.angular.z / 2.0)
 
+    print(f"Left Velocity: {left_vel:.2f}, Right Velocity: {right_vel:.2f}")
+
     set_velocity(left_vel, right_vel)
 
 
